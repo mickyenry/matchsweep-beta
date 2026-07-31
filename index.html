@@ -435,7 +435,7 @@
       </div>
       <label data-i18n="mp_havecode">Hai un codice? Entra nella stanza dell'amico</label>
       <div style="display:flex; gap:10px; align-items:stretch;">
-        <input id="mp-code" type="text" maxlength="9" placeholder="TORO-72" autocomplete="off" style="flex:1; width:auto; min-width:0;">
+        <input id="mp-code" type="text" maxlength="12" placeholder="TORO-72" autocomplete="off" style="flex:1; width:auto; min-width:0;">
         <button class="b90 c-blue" id="mp-join" onclick="UI.mpJoin()" data-i18n="mp_join">Entra</button>
       </div>
       <div class="rules-note" data-i18n-html="mp_note">Uno crea la stanza e detta il codice, l'altro entra: si gioca in due, ognuno dal suo dispositivo. Serve la connessione a internet.</div>
@@ -2987,7 +2987,7 @@ const FB_CONFIG={
   storageBucket:"matchsweep-c5abb.firebasestorage.app",
   messagingSenderId:"649986188848",
   appId:"1:649986188848:web:635e18550f14d78716aff5"};
-const MP_WORDS=['TORO','LUPO','FALCO','LEONE','TIGRE','DRAGO','ORSO','PUMA','COBRA','VOLPE','CERVO','GUFO','SQUALO','GECO','RONDINE','BISONTE'];
+const MP_WORDS=['TORO','LUPO','FALCO','LEONE','TIGRE','DRAGO','ORSO','PUMA','COBRA','VOLPE','CERVO','GUFO','LINCE','GECO','RANA','IBIS']; // tutte ≤5 lettere: codice max 8 caratteri (RONDINE-72 superava la casella: bug del collaudo 31/07)
 var MP=null; // stato stanza: {role:'host'|'guest', code, ref, myTeam, applied, queue, live, pumping, started, initSent, deal2, deal2Sent, wait2, done, offRefs}
 var fbDb=null;
 function fbScript(src){return new Promise((ok,ko)=>{const s=document.createElement('script');s.src=src;s.onload=ok;s.onerror=()=>ko(new Error(src));document.head.appendChild(s);});}
