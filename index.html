@@ -972,7 +972,7 @@ I18N.it={
  mp_note:"Uno crea la stanza e detta il codice, l'altro entra: si gioca in due, ognuno dal suo dispositivo. Serve la connessione a internet.",
  mp_cancel:'Annulla', mp_code_lbl:'Codice stanza',
  mp_creating:'Preparo la stanza', mp_waiting:"In attesa dell'avversario",
- mp_share:'Comunica questo codice al tuo avversario',
+ mp_share:'Comunica questo codice al tuo avversario e RESTA SU QUESTA SCHERMATA: la partita parte appena entra',
  mp_joining:'Entro nella stanza',
  mp_connecting:'Mi collego', mp_err_net:'Collegamento non riuscito. Controlla la connessione a internet e riprova.',
  mp_err_notfound:'Stanza non trovata: controlla il codice.',
@@ -1151,7 +1151,7 @@ I18N.en={
  mp_note:'One player creates the room and shares the code, the other joins: two players, each on their own device. An internet connection is required.',
  mp_cancel:'Cancel', mp_code_lbl:'Room code',
  mp_creating:'Setting up the room', mp_waiting:'Waiting for your opponent',
- mp_share:'Share this code with your opponent',
+ mp_share:'Share this code with your opponent and STAY ON THIS SCREEN: the match starts as soon as they join',
  mp_joining:'Joining the room',
  mp_connecting:'Connecting', mp_err_net:'Connection failed. Check your internet connection and try again.',
  mp_err_notfound:'Room not found: check the code.',
@@ -3166,6 +3166,8 @@ async function mpJoinRoom(){
     const ref=db.ref('rooms/'+raw);
     const s=await ref.child('created').once('value');
     if(!s.exists()){mpShowSetup();askConfirm(T.mp_err_notfound,()=>{});return;}
+    const ph=await ref.child('presence/host').once('value'); // stanza orfana (creatore uscito di colpo): inutile entrare
+    if(ph.val()===false){mpShowSetup();askConfirm(T.mp_err_notfound,()=>{});return;}
     const tx=await ref.child('guest').transaction(cur=>cur===null?{team}:undefined); // entra solo il primo
     if(!tx.committed){mpShowSetup();askConfirm(T.mp_err_full,()=>{});return;}
     MP={role:'guest',code:raw,ref,myTeam:team,applied:0,queue:{},live:false,pumping:false,started:false,initSent:false,deal2:null,deal2Sent:false,wait2:false,done:false,offRefs:[]};
