@@ -435,7 +435,7 @@
       </div>
       <label data-i18n="mp_havecode">Hai un codice? Entra nella stanza dell'amico</label>
       <div style="display:flex; gap:10px; align-items:stretch;">
-        <input id="mp-code" type="text" maxlength="12" placeholder="TORO-72" autocomplete="off" style="flex:1; width:auto; min-width:0;">
+        <input id="mp-code" type="text" maxlength="12" placeholder="TORO72" autocomplete="off" style="flex:1; width:auto; min-width:0;">
         <button class="b90 c-blue" id="mp-join" onclick="UI.mpJoin()" data-i18n="mp_join">Entra</button>
       </div>
       <div class="rules-note" data-i18n-html="mp_note">Uno crea la stanza e detta il codice, l'altro entra: si gioca in due, ognuno dal suo dispositivo. Serve la connessione a internet.</div>
@@ -977,7 +977,8 @@ I18N.it={
  mp_connecting:'Mi collego', mp_err_net:'Collegamento non riuscito. Controlla la connessione a internet e riprova.',
  mp_err_notfound:'Stanza non trovata: controlla il codice.',
  mp_err_full:'La stanza è già al completo.',
- mp_err_code:'Scrivi il codice della stanza (es. TORO-72).',
+ mp_err_code:'Scrivi il codice della stanza (es. TORO72).',
+ mp_rematch_wait:"Rivincita richiesta: in attesa dell'avversario…",
  mp_opp_quit:"L'avversario ha abbandonato la partita.",
  mp_opp_off:"L'avversario ha perso la connessione. La partita non può continuare.",
  mp_opp_wait2:"In attesa che l'avversario inizi il 2° tempo",
@@ -1156,7 +1157,8 @@ I18N.en={
  mp_connecting:'Connecting', mp_err_net:'Connection failed. Check your internet connection and try again.',
  mp_err_notfound:'Room not found: check the code.',
  mp_err_full:'The room is already full.',
- mp_err_code:'Type the room code (e.g. TORO-72).',
+ mp_err_code:'Type the room code (e.g. TORO72).',
+ mp_rematch_wait:'Rematch requested: waiting for your opponent…',
  mp_opp_quit:'Your opponent has left the match.',
  mp_opp_off:'Your opponent lost the connection. The match cannot continue.',
  mp_opp_wait2:'Waiting for your opponent to start the 2nd half',
@@ -2249,8 +2251,9 @@ function renderNews(story){
   const sp2=sc2.querySelector('.pb-spr');
   if(sp2){const px2=document.createElement('div');px2.className='px';px2.style.boxShadow=spriteShadow(km.c1,km.c2,km.shorts);sp2.appendChild(px2);}
   $('news-marc').innerHTML=G.scorers.map(s=>`<div class="news-row"><b>${s.minute}'</b>${s.name} (n. ${s.num}) — ${s.side==='me'?G.names.me:G.names.ai}</div>`).join('');
-  // stessi pulsanti del tabellino classico: Rigioca solo in amichevole (e mai in multiplayer), Continua in torneo/carriera
-  $('news-rigioca').style.display=(G.tour||G.career||G.mp)?'none':'';
+  // stessi pulsanti del tabellino classico: Rigioca in amichevole e multiplayer (= rivincita), Continua in torneo/carriera
+  const nr=$('news-rigioca');nr.disabled=false;nr.style.opacity='';
+  nr.style.display=(G.tour||G.career)?'none':'';
   $('news-continue').style.display=(G.tour||G.career)?'':'none';
 }
 function renderSeasonNews(d){ // GIORNALE DI FINE STAGIONE: la coppa e il Pallone d'oro (deciso 2026-07-28, al posto del riepilogo testuale)
@@ -2311,9 +2314,10 @@ function endHalf(){
     if(G.shootResult)e=fmt(T.res_pens,G.shootWinner==='me'?G.names.me:G.names.ai);
     $('fin-esito').textContent=e;
     $('fin-marcatori').innerHTML=marcatoriHTML();
-    if(G.mp)mpFullTime(); // multiplayer: la stanza ha fatto il suo dovere (la rivincita = nuova stanza, per ora)
-    // in torneo/carriera/multiplayer: niente "Rigioca"
-    $('btn-rigioca').style.display=(G.tour||G.career||G.mp)?'none':'';
+    if(G.mp)mpFullTime(); // multiplayer: la stanza resta aperta per la rivincita
+    // in torneo/carriera niente "Rigioca"; in multiplayer c'è ed è la RIVINCITA nella stessa stanza
+    const br=$('btn-rigioca');br.disabled=false;br.style.opacity='';
+    br.style.display=(G.tour||G.career)?'none':'';
     $('btn-tour-back').style.display=G.tour?'':'none';
     $('btn-career-back').style.display=G.career?'':'none';
     const story=newsStory(); // partita memorabile? allora PRIMA PAGINA al posto del tabellino
@@ -3004,7 +3008,7 @@ async function fbInit(){
 function mpStatus(msg,dots){const el=$('mp-status');if(el)el.innerHTML=msg?msg+(dots?'<span class="dots"></span>':''):'';}
 function mpShowWait(code,msg){$('mp-setup').style.display='none';$('mp-wait').style.display='';$('mp-code-big').textContent=code||'—';mpStatus(msg,true);}
 function mpShowSetup(){$('mp-setup').style.display='';$('mp-wait').style.display='none';}
-function mpMkCode(){return MP_WORDS[Math.floor(Math.random()*MP_WORDS.length)]+'-'+(10+Math.floor(Math.random()*90));}
+function mpMkCode(){return MP_WORDS[Math.floor(Math.random()*MP_WORDS.length)]+(10+Math.floor(Math.random()*90));} // niente trattino: scomodo da digitare sul telefono (feedback collaudo 31/07)
 function mpTeamSel(){return mkTeam(+$('mp-team').value,$('mp-era').value);}
 function mpMakeDeal(){ // l'host mescola: una smazzata pronta da pubblicare (qui il mazzo viaggia nella stanza)
   const deck=shuffle(buildDeck());
@@ -3086,10 +3090,9 @@ function mpStartHalf2(){
   MP.live=true;
   mpPump();
 }
-function mpFullTime(){ // triplice fischio: la stanza ha fatto il suo dovere (G.mp resta per i pulsanti del tabellino)
+function mpFullTime(){ // triplice fischio: la stanza resta APERTA per la rivincita (si chiude con Menu o chiudendo la pagina)
   if(!MP)return;
-  MP.done=true;MP.live=false;
-  mpCleanup(MP.role==='host');
+  MP.live=false;
 }
 function mpQuit(){ // uscita volontaria dal match: avvisa l'avversario, poi si chiude
   if(MP){try{MP.ref.child('quit').set(MP.role);}catch(e){}}
@@ -3099,10 +3102,13 @@ function mpQuit(){ // uscita volontaria dal match: avvisa l'avversario, poi si c
 }
 function mpListen(){ // ganci comuni ai due ruoli: inizio partita, mosse, 2a smazzata, abbandono, presenza
   const other=MP.role==='host'?'guest':'host';
-  mpOn(MP.ref.child('init'),'value',s=>{
+  mpOn(MP.ref.child('init'),'value',s=>{ // verbale d'inizio: vale per la prima partita E per ogni rivincita (r crescente)
     const init=s.val();
-    if(!init||!MP||MP.started)return;
-    MP.started=true;
+    if(!init||!MP)return;
+    const r=init.r||1;
+    if(r<=MP.round)return; // già in corso (o eco di un round vecchio)
+    MP.round=r;MP.started=true;
+    MP.applied=0;MP.queue={};MP.deal2=null;MP.deal2Sent=false;MP.wait2=false; // contatori azzerati per il nuovo round
     mpBuildG(init);
     beginHalfUI(1);
     MP.live=true;
@@ -3126,6 +3132,22 @@ function mpListen(){ // ganci comuni ai due ruoli: inizio partita, mosse, 2a sma
   mpOn(MP.ref.child('presence/'+other),'value',s=>{
     if(s.val()===false&&MP&&MP.started&&!MP.done)mpAbort(T.mp_opp_off);
   });
+  if(MP.role==='host')mpOn(MP.ref.child('rematch'),'value',s=>{ // rivincita: quando ENTRAMBI hanno premuto Rigioca, l'host rimescola
+    const rm=s.val();if(!rm||!MP)return;
+    const n=MP.round+1, e=rm[n];
+    if(!e||!e.h||!e.g||MP.rematchSent>=n)return;
+    MP.rematchSent=n;
+    try{
+      MP.ref.child('moves').remove();MP.ref.child('deals').remove(); // tavolo pulito prima del nuovo verbale
+      MP.ref.child('init').set({r:n,starter:Math.random()<.5?'host':'guest',th:MP.myTeam,tg:MP.oppTeam,deal:mpMakeDeal()});
+    }catch(e2){}
+  });
+}
+function mpRematch(){ // RIVINCITA nella stessa stanza: stesse squadre, nuova monetina, nuovo mazzo
+  if(!MP||!G||!G.mp)return;
+  try{MP.ref.child('rematch/'+(MP.round+1)+'/'+(MP.role==='host'?'h':'g')).set(true);}catch(e){}
+  ['btn-rigioca','news-rigioca'].forEach(id=>{const b=$(id);if(b){b.disabled=true;b.style.opacity=.55;}});
+  $('fin-esito').textContent=T.mp_rematch_wait;
 }
 async function mpCreateRoom(){
   const team=mpTeamSel();
@@ -3140,7 +3162,7 @@ async function mpCreateRoom(){
       if(!s.exists()){code=c;ref=r;}
     }
     if(!code)throw new Error('nocode');
-    MP={role:'host',code,ref,myTeam:team,applied:0,queue:{},live:false,pumping:false,started:false,initSent:false,deal2:null,deal2Sent:false,wait2:false,done:false,offRefs:[]};
+    MP={role:'host',code,ref,myTeam:team,oppTeam:null,round:0,rematchSent:0,applied:0,queue:{},live:false,pumping:false,started:false,initSent:false,deal2:null,deal2Sent:false,wait2:false,done:false,offRefs:[]};
     await ref.set({created:firebase.database.ServerValue.TIMESTAMP,host:{team}});
   }catch(e){MP=null;mpShowSetup();askConfirm(T.mp_err_net,()=>{});return;}
   ref.child('presence/host').set(true);
@@ -3151,14 +3173,13 @@ async function mpCreateRoom(){
   mpOn(ref.child('guest'),'value',s=>{ // l'ospite è arrivato: monetina e verbale d'inizio
     const g=s.val();
     if(!g||!g.team||!MP||MP.initSent)return;
-    MP.initSent=true;
-    try{ref.child('init').set({starter:Math.random()<.5?'host':'guest',th:MP.myTeam,tg:g.team,deal:mpMakeDeal()});}catch(e){}
+    MP.initSent=true;MP.oppTeam=g.team; // la squadra dell'ospite serve anche per le rivincite
+    try{ref.child('init').set({r:1,starter:Math.random()<.5?'host':'guest',th:MP.myTeam,tg:g.team,deal:mpMakeDeal()});}catch(e){}
   });
 }
 async function mpJoinRoom(){
-  let raw=($('mp-code').value||'').toUpperCase().replace(/[^A-Z0-9-]/g,'');
+  const raw=($('mp-code').value||'').toUpperCase().replace(/[^A-Z0-9]/g,''); // spazi e trattini ignorati: il codice è solo lettere+numeri
   if(!raw){askConfirm(T.mp_err_code,()=>{});return;}
-  if(raw.indexOf('-')<0)raw=raw.replace(/^([A-Z]+)(\d+)$/,'$1-$2'); // TORO72 → TORO-72
   const team=mpTeamSel();
   mpShowWait(raw,T.mp_connecting);
   let db;try{db=await fbInit();}catch(e){mpShowSetup();askConfirm(T.mp_err_net,()=>{});return;}
@@ -3170,7 +3191,7 @@ async function mpJoinRoom(){
     if(ph.val()===false){mpShowSetup();askConfirm(T.mp_err_notfound,()=>{});return;}
     const tx=await ref.child('guest').transaction(cur=>cur===null?{team}:undefined); // entra solo il primo
     if(!tx.committed){mpShowSetup();askConfirm(T.mp_err_full,()=>{});return;}
-    MP={role:'guest',code:raw,ref,myTeam:team,applied:0,queue:{},live:false,pumping:false,started:false,initSent:false,deal2:null,deal2Sent:false,wait2:false,done:false,offRefs:[]};
+    MP={role:'guest',code:raw,ref,myTeam:team,oppTeam:null,round:0,rematchSent:0,applied:0,queue:{},live:false,pumping:false,started:false,initSent:false,deal2:null,deal2Sent:false,wait2:false,done:false,offRefs:[]};
     ref.child('presence/guest').set(true);
     ref.child('presence/guest').onDisconnect().set(false);
     mpStatus(T.mp_joining,true);
@@ -3200,7 +3221,7 @@ window.UI={
   closeChooser(){$('chooser').classList.remove('show');},
   confirmYes(){const cb=confirmCb;$('confirm-modal').classList.remove('show');confirmCb=null;if(cb)cb();},
   closeConfirm(){$('confirm-modal').classList.remove('show');confirmCb=null;},
-  rematch(){startFriendly(G.teamA,G.teamB);},
+  rematch(){if(G&&G.mp){mpRematch();return;}startFriendly(G.teamA,G.teamB);},
   toSetup(){fillTeamSelects();show('scr-setup');},
   /* ===== Multiplayer: stanza con codice ===== */
   toMp(){
@@ -3589,6 +3610,7 @@ window.UI={
     renderCareerHub();show('scr-career');
   },
   finMenu(){ // Menu dal tabellino/prima pagina: il risultato NON va mai perso — si registra da solo, poi si esce
+    if(G&&G.mp){mpQuit();return;} // multiplayer: niente da registrare, si saluta la stanza (l'avversario viene avvisato)
     if(G&&G.career)careerRecordMatch();
     else if(G&&G.tour)tourRecordMatch();
     G=null;
