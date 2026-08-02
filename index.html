@@ -406,6 +406,54 @@
     #log{font-size:.72rem; min-height:56px; padding:6px 10px;}
     #goal-overlay .big{font-size:2.2rem;}
     #goal-overlay .who{font-size:1.05rem;}
+    /* F2 — testata giornale compatta e schermate ancorate più in alto */
+    .pb-head{margin-top:12px; letter-spacing:2px;}
+    .pb-sub{font-size:.5rem; margin-top:5px; letter-spacing:2px;}
+    .pb-rule{margin:9px 22px;}
+    .pb-headline{font-size:1.05rem; margin-top:10px; letter-spacing:.5px;}
+    .pb-cols{top:170px; left:22px; right:22px; gap:14px;}
+    .pb-photo{width:38vw; top:36%;}
+    .pb-photo2{width:32vw; top:64%;}
+    .pb-photo::after{font-size:.4rem; padding:4px 3px;}
+    .pb-photo2::after{font-size:.38rem; padding:4px 3px;}
+    #scr-menu{padding-top:clamp(112px,18vh,132px);}
+    #scr-setup, #scr-mp, #scr-options, #scr-teams, #scr-history, #scr-rules, #scr-saves, #scr-lang, #scr-tour-pick, #scr-tour-setup, #scr-tour, #scr-career-list, #scr-career-new, #scr-career{padding-top:clamp(88px,14vh,108px);}
+    .screen{padding:14px;} /* #scr-match resta padding:0 (id vince) */
+    .menu-grid90{grid-template-columns:repeat(2, minmax(124px,142px)); gap:12px; padding:14px;} /* prima: minmax(145..165)+padding 20 = 386px, sbordava dai 375 */
+    .b90{font-size:.54rem;}
+    .b90 .ico{font-size:1.6rem;}
+    .mcopy{font-size:.38rem; margin-top:16px; text-align:center; line-height:1.8; max-width:92vw;}
+    .panel90{padding:16px 12px;}
+    .panel90 .phead{padding:0 46px;}
+    .top-back{top:10px; right:12px;}
+    /* F3 — classifiche: 9 colonne non stanno in 375px → GF e GS nascoste (Pt G V N P e DR restano).
+       Vale per TUTTE le .ttab: sono solo classifiche (lega 9 col / gironi Euro 8 col), GF-GS sempre in 7ª-8ª posizione */
+    .ttab td:nth-child(7), .ttab th:nth-child(7), .ttab td:nth-child(8), .ttab th:nth-child(8){display:none;}
+    .ttab{font-size:.8rem;}
+    .ttab td{padding:4px 4px;}
+    .ttab th{font-size:.52rem; padding:6px 3px;}
+    .ttab th.grp-h{font-size:.8rem;}
+    .trow, .trow.gday, .scr-row, .rrow{font-size:.8rem;}
+    .scr-row .scr-n{font-size:.8rem;}
+    .scr-row{gap:8px; padding:4px 4px;}
+    .scr-sub{font-size:.72rem; margin-left:4px;}
+    .scr-g{font-size:.58rem; min-width:28px;}
+    .rrow{grid-template-columns:1fr 48px 1fr; gap:5px;}
+    .rrow .rs{font-size:.58rem;}
+    .tour-tabs{gap:5px;}
+    .tour-tabs .b90{font-size:.4rem; padding:9px 2px; gap:3px;}
+    .subtab{font-size:.44rem; padding:9px 5px;}
+    .subtabs{gap:6px;}
+    /* F4 — editor squadre: le due card affiancate diventano una colonna */
+    .teams-wrap{grid-template-columns:1fr; gap:14px;}
+    .frow{grid-template-columns:1fr 58px;}
+    /* F4 — tabellone: colonne più strette, scorre in orizzontale (overflow-x già in base) */
+    .bracket{gap:8px;}
+    .bcol{min-width:126px;}
+    .bteam{font-size:.78rem; padding:6px 7px; gap:5px;}
+    .bteam .bsc{font-size:.6rem;}
+    .brk-note{font-size:.78rem;}
+    .bchamp{font-size:.6rem;}
   }
 </style>
 </head>
