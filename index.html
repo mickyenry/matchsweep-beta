@@ -165,7 +165,7 @@
   /* pulsanti riga carriera: quadrati 34x34 come il ◄ in alto, allineati al bordo destro del contenuto */
   .career-row .cbtn{width:34px; height:34px; padding:0; display:flex; align-items:center; justify-content:center; line-height:1; font-family:var(--px); font-size:.62rem; border:2px solid #fff; color:#fff; box-shadow:2px 2px 0 rgba(0,0,0,.5); flex:none;}
   #career-play{font-size:.52rem; padding:11px 14px;} /* proporzionati alle altre bottoniere dell'hub */
-  #career-sim, #tour-sim, #tour-abandon, #tour-hist, #setup-hist, #mp-join{aspect-ratio:auto !important; flex-direction:row !important; font-size:.48rem !important; padding:11px 12px !important;} /* niente quadrato: bottoni bassi, da comprimari (protagonista = solo il verde) */
+  #career-sim, #tour-sim, #tour-abandon, #tour-hist, #setup-hist, #mp-join, #mp-resume-btn, #mp-resume-x{aspect-ratio:auto !important; flex-direction:row !important; font-size:.48rem !important; padding:11px 12px !important;} /* niente quadrato: bottoni bassi, da comprimari (protagonista = solo il verde) */
   .career-row .cres{background:#1fae1f;} .career-row .cdel{background:#c1121f;}
   .trow.gday{color:var(--oro); font-family:'Segoe UI',system-ui,sans-serif; font-size:.93rem; font-weight:600; border-bottom:none; margin-top:10px;} /* Segoe come grp-h: il pixel nei titoletti di contenuto era poco leggibile (Enrico: "il gioco deve essere pulito") */
   /* schede (leghe/coppa/editor): tutte grigie, il BLU è la selezione e si sposta col click (2026-07-28, Enrico) */
@@ -3188,6 +3188,7 @@ function mpListen(){ // ganci comuni ai due ruoli: inizio partita, mosse, 2a sma
     const r=init.r||1;
     if(r<=MP.round)return; // già in corso (o eco di un round vecchio)
     MP.round=r;MP.started=true;
+    mpMark(); // biglietto in tasca SOLO da quando la partita è vera (in sala d'attesa niente: chiudere = annullare)
     MP.applied=0;MP.queue={};MP.deal2=null;MP.deal2Sent=false;MP.wait2=false; // contatori azzerati per il nuovo round
     mpBuildG(init);
     beginHalfUI(1);
@@ -3275,17 +3276,13 @@ async function mpRejoinRoom(){
   MP={role:mk.role,code:mk.code,ref,myTeam:null,oppTeam:null,round:init?(init.r||1):0,rematchSent:0,
       applied:0,queue:{},live:false,pumping:false,started:!!init,initSent:!!init,
       deal2:d2,deal2Sent:!!d2,wait2:false,done:false,oppOff:false,offRefs:[]};
-  if(init){MP.myTeam=(mk.role==='host')?init.th:init.tg;MP.oppTeam=(mk.role==='host')?init.tg:init.th;}
-  else MP.myTeam=(mk.role==='host')?(room.host&&room.host.team):(room.guest&&room.guest.team);
+  if(!init){ // partita mai iniziata (il biglietto nasce solo a partita vera): stanza monca, si lascia perdere
+    mpUnmark();MP=null;mpShowSetup();askConfirm(T.mp_res_gone,()=>{});return;
+  }
+  MP.myTeam=(mk.role==='host')?init.th:init.tg;MP.oppTeam=(mk.role==='host')?init.tg:init.th;
   ref.child('presence/'+mk.role).set(true);
   ref.child('presence/'+mk.role).onDisconnect().set(false);
   mpMark();
-  if(!init){ // partita mai iniziata: si torna in sala d'attesa (il listener init farà il resto)
-    mpShowWait(mk.code,(mk.role==='host')?(T.mp_share+'.<br>'+T.mp_waiting):T.mp_joining);
-    mpListen();
-    if(mk.role==='host')mpHostGuestHook(ref);
-    return;
-  }
   // RICOSTRUZIONE: il verbale rigiocato in un lampo, senza animazioni (playCard puro)
   mpBuildG(init);
   const moves=[];if(room.moves)Object.keys(room.moves).forEach(k=>{moves[+k]=room.moves[k];});
@@ -3334,7 +3331,6 @@ async function mpCreateRoom(){
   }catch(e){MP=null;mpShowSetup();askConfirm(T.mp_err_net,()=>{});return;}
   ref.child('presence/host').set(true);
   ref.child('presence/host').onDisconnect().set(false);
-  mpMark(); // biglietto in tasca: se cade la linea si rientra con "Riprendi la partita"
   $('mp-code-big').textContent=code;
   mpStatus(T.mp_share+'.<br>'+T.mp_waiting,true);
   mpListen();
@@ -3357,7 +3353,6 @@ async function mpJoinRoom(){
     MP={role:'guest',code:raw,ref,myTeam:team,oppTeam:null,round:0,rematchSent:0,applied:0,queue:{},live:false,pumping:false,started:false,initSent:false,deal2:null,deal2Sent:false,wait2:false,done:false,offRefs:[]};
     ref.child('presence/guest').set(true);
     ref.child('presence/guest').onDisconnect().set(false);
-    mpMark(); // biglietto in tasca: se cade la linea si rientra con "Riprendi la partita"
     mpStatus(T.mp_joining,true);
     mpListen();
   }catch(e){MP=null;mpShowSetup();askConfirm(T.mp_err_net,()=>{});}
