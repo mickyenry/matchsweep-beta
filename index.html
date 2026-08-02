@@ -385,8 +385,8 @@
     #scr-menu{padding-top:clamp(150px,20vh,200px);}
     .pb-headline{font-size:clamp(1.1rem,5vw,2rem);}
   }
-  @media (max-width:480px){ /* telefono verticale — riferimento iPhone SE 375×667 */
-    :root{--cw:62px; --ch:89px;} /* carte ridotte: 5 carte sul tavolo stanno in una riga da 375px */
+  @media (max-width:480px){ /* telefono verticale — riferimento iPhone SE (320×568 logici, verificato da screenshot) */
+    :root{--cw:clamp(52px, calc((100vw - 42px)/5), 62px); --ch:calc(var(--cw)*1.44);} /* 5 carte sul tavolo stanno SEMPRE in una riga, da 320px in su */
     .zone{gap:6px; padding:8px 6px;}
     .card{border-radius:8px; padding-bottom:26px;}
     .card .val{font-size:2.1rem;}
@@ -440,8 +440,8 @@
     .scr-g{font-size:.58rem; min-width:28px;}
     .rrow{grid-template-columns:1fr 48px 1fr; gap:5px;}
     .rrow .rs{font-size:.58rem;}
-    .tour-tabs{gap:5px;}
-    .tour-tabs .b90{font-size:.4rem; padding:9px 2px; gap:3px;}
+    .tour-tabs{grid-template-columns:1fr 1fr; gap:6px;} /* 4 schede in fila non stanno in 320px: 2 righe da 2, nomi interi (niente abbreviazioni) */
+    .tour-tabs .b90{font-size:.46rem; padding:10px 4px; gap:4px;}
     .subtab{font-size:.44rem; padding:9px 5px;}
     .subtabs{gap:6px;}
     /* F4 — editor squadre: le due card affiancate diventano una colonna */
@@ -454,6 +454,12 @@
     .bteam .bsc{font-size:.6rem;}
     .brk-note{font-size:.78rem;}
     .bchamp{font-size:.6rem;}
+    /* bottoniere: il verde (wide, width 100%) prende la sua riga, i comprimari si dividono le successive.
+       !important necessario: i comprimari hanno flex/font/padding INLINE nell'HTML */
+    .panel90 .btn-row2, .btn-row{flex-wrap:wrap; gap:8px;}
+    #tour-sim, #tour-abandon, #tour-hist, #setup-hist, #career-sim, #mp-join{flex:1 1 auto !important; font-size:.44rem !important; padding:10px 8px !important;}
+    /* nomi squadra lunghi nello scoreboard: puntini invece di sbordare */
+    #sb-me-name, #sb-ai-name{max-width:30vw; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
   }
 </style>
 </head>
