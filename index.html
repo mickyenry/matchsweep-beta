@@ -3189,6 +3189,7 @@ function mpListen(){ // ganci comuni ai due ruoli: inizio partita, mosse, 2a sma
     if(r<=MP.round)return; // già in corso (o eco di un round vecchio)
     MP.round=r;MP.started=true;
     mpMark(); // biglietto in tasca SOLO da quando la partita è vera (in sala d'attesa niente: chiudere = annullare)
+    try{MP.ref.child('cid/'+(MP.role==='host'?'h':'g')).set(MP.cid);}catch(e){} // firma depositata in stanza: al rientro dice qual è la MIA sedia
     MP.applied=0;MP.queue={};MP.deal2=null;MP.deal2Sent=false;MP.wait2=false; // contatori azzerati per il nuovo round
     mpBuildG(init);
     beginHalfUI(1);
@@ -3214,12 +3215,13 @@ function mpListen(){ // ganci comuni ai due ruoli: inizio partita, mosse, 2a sma
     if(!MP||!MP.started||MP.done)return;
     if(s.val()===false){
       MP.oppOff=true;
-      if(G&&G.mp&&!G.fin)showFieldNote(T.mp_opp_off,T.mp_opp_off2);
+      if(G&&G.mp&&!G.fin){showFieldNote(T.mp_opp_off,T.mp_opp_off2);addLog(`<span class="evt">⚠ ${T.mp_opp_off}</span>`);} // anche in telecronaca: resta agli atti
     }else if(s.val()===true&&MP.oppOff){
       MP.oppOff=false;
       if(G&&G.mp&&!G.fin){
         showFieldNote(T.mp_opp_back,'');
-        setTimeout(()=>{const k=$('kickoff-note');if(k&&MP&&!MP.oppOff)k.classList.add('hidden');},2200);
+        addLog(`<span class="evt">${T.mp_opp_back}</span>`); // in telecronaca: la nota sul campo dura poco, questa resta
+        setTimeout(()=>{const k=$('kickoff-note');if(k&&MP&&!MP.oppOff)k.classList.add('hidden');},3000);
       }
       mpPump();
     }
@@ -3248,7 +3250,13 @@ function mpRematch(){ // RIVINCITA nella stessa stanza: stesse squadre, nuova mo
    in un lampo col motore deterministico — stesse carte, stesso punteggio, stessa carta da giocare.
    L'avversario nel frattempo NON viene buttato fuori: vede "connessione persa, attendo il rientro"
    e decide lui se aspettare o uscire (niente timeout: coerente con la filosofia senza-timer). */
-function mpMark(){if(MP)lsSet('soccercard_mp_room',JSON.stringify({code:MP.code,role:MP.role}));}
+function mpMark(){ // il biglietto porta una FIRMA unica del client (cid): due finestre sullo stesso PC condividono
+  // la tasca (localStorage) e si sovrascrivono il biglietto a vicenda — al rientro il ruolo si deduce
+  // dalla stanza cercando la propria firma, mai fidandosi del ruolo scritto nel biglietto (bug 2026-08-02)
+  if(!MP)return;
+  if(!MP.cid)MP.cid=Math.random().toString(36).slice(2,10);
+  lsSet('soccercard_mp_room',JSON.stringify({code:MP.code,role:MP.role,cid:MP.cid}));
+}
 function mpUnmark(){try{localStorage.removeItem('soccercard_mp_room');}catch(e){}}
 function mpMarker(){try{const m=JSON.parse(lsGet('soccercard_mp_room')||'null');return (m&&m.code&&m.role)?m:null;}catch(e){return null;}}
 function mpHostGuestHook(ref){ // l'ospite è arrivato: monetina e verbale d'inizio (usato alla creazione E al rientro in sala d'attesa)
@@ -3273,15 +3281,21 @@ async function mpRejoinRoom(){
   }
   const ref=db.ref('rooms/'+mk.code), init=room.init||null;
   const d2=(room.deals&&room.deals['2'])||null;
-  MP={role:mk.role,code:mk.code,ref,myTeam:null,oppTeam:null,round:init?(init.r||1):0,rematchSent:0,
-      applied:0,queue:{},live:false,pumping:false,started:!!init,initSent:!!init,
-      deal2:d2,deal2Sent:!!d2,wait2:false,done:false,oppOff:false,offRefs:[]};
   if(!init){ // partita mai iniziata (il biglietto nasce solo a partita vera): stanza monca, si lascia perdere
-    mpUnmark();MP=null;mpShowSetup();askConfirm(T.mp_res_gone,()=>{});return;
+    mpUnmark();mpShowSetup();askConfirm(T.mp_res_gone,()=>{});return;
   }
-  MP.myTeam=(mk.role==='host')?init.th:init.tg;MP.oppTeam=(mk.role==='host')?init.tg:init.th;
-  ref.child('presence/'+mk.role).set(true);
-  ref.child('presence/'+mk.role).onDisconnect().set(false);
+  // la MIA sedia la dice la FIRMA depositata in stanza, non il biglietto (che su uno stesso PC può
+  // essere stato sovrascritto dall'altra finestra); se la sedia risulta ancora occupata, niente doppioni
+  let role=mk.role;
+  const cids=room.cid||{};
+  if(mk.cid){if(cids.h===mk.cid)role='host';else if(cids.g===mk.cid)role='guest';}
+  if(room.presence&&room.presence[role]===true){mpShowSetup();askConfirm(T.mp_err_full,()=>{});return;}
+  MP={role,code:mk.code,ref,cid:mk.cid,myTeam:null,oppTeam:null,round:init.r||1,rematchSent:0,
+      applied:0,queue:{},live:false,pumping:false,started:true,initSent:true,
+      deal2:d2,deal2Sent:!!d2,wait2:false,done:false,oppOff:false,offRefs:[]};
+  MP.myTeam=(role==='host')?init.th:init.tg;MP.oppTeam=(role==='host')?init.tg:init.th;
+  ref.child('presence/'+role).set(true);
+  ref.child('presence/'+role).onDisconnect().set(false);
   mpMark();
   // RICOSTRUZIONE: il verbale rigiocato in un lampo, senza animazioni (playCard puro)
   mpBuildG(init);
@@ -3290,7 +3304,7 @@ async function mpRejoinRoom(){
   for(let n=0;n<moves.length;n++){
     const m=moves[n];if(!m)break;
     MP.applied=n+1;
-    const side=((m.s==='h')===(mk.role==='host'))?'me':'ai';
+    const side=((m.s==='h')===(role==='host'))?'me':'ai';
     const r=playCard(G,side,m.h,m.o||0);
     if(r.endOfHalf){
       if(G.half===1&&MP.deal2&&moves[n+1]!==undefined)mpApplyDeal(2,MP.deal2); // l'intervallo è già alle spalle
