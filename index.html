@@ -571,9 +571,8 @@
     <label data-i18n="lbl_cupera">Epoca della coppa</label>
     <select id="mpc-era"></select>
     <label data-i18n="mpc_lbl_per">Squadre controllate da ciascun giocatore</label>
-    <select id="mpc-per">
-      <option value="1">1</option><option value="2" selected>2</option><option value="3">3</option><option value="4">4</option>
-    </select>
+    <select id="mpc-per"></select><!-- opzioni dinamiche: fino a metà dei partecipanti spuntati -->
+
     <label data-i18n="lbl_formula">Girone iniziale</label>
     <select id="mpc-formula"><option value="2" data-i18n="opt_ar">Andata e ritorno</option><option value="1" data-i18n="opt_a">Solo andata</option></select>
     <label data-i18n="lbl_qual">Squadre alla fase finale</label>
@@ -979,7 +978,10 @@ function startHalf(G,half){
   deck.forEach(c=>{if(c.v===1)c.kind='punizione';});
   G.half=half;G.deck=deck;
   G.table=deck.splice(0,4);
-  G.hands={me:deck.splice(0,3),ai:deck.splice(0,3)};
+  // G.flip (multiplayer, lato ospite): mazzo unico dal seme condiviso, le prime 3 carte vanno
+  // SEMPRE allo stesso giocatore su entrambi gli schermi (stessa lezione della ridistribuzione 3+3)
+  const hA=deck.splice(0,3),hB=deck.splice(0,3);
+  G.hands=G.flip?{me:hB,ai:hA}:{me:hA,ai:hB};
   G.turn=(half%2===1)?G.starter1:(G.starter1==='me'?'ai':'me'); // le smazzate extra alternano il via
   G.playsInHalf=0;G.lastCapturer=null;
   G.seen={};G.table.forEach(c=>{G.seen[c.v]=(G.seen[c.v]||0)+1;}); // conteggio carte (per la lucidità dell'IA)
@@ -993,10 +995,14 @@ function startShootout(G){
   deck.forEach(c=>{if(c.v===1)c.kind='rigore';}); // ai rigori ogni asso è un rigore
   G.half++;
   G.deck=[];G.table=[];G.seen={};
-  G.hands={me:deck.splice(0,10),ai:deck.splice(0,10)};
+  const sA=deck.splice(0,10),sB=deck.splice(0,10);
+  G.hands=G.flip?{me:sB,ai:sA}:{me:sA,ai:sB}; // flip: come startHalf, per gli schermi specchiati del multiplayer
   G.playsInHalf=0;G.lastCapturer=null;
   G.turn=(G.half%2===1)?G.starter1:(G.starter1==='me'?'ai':'me');
 }
+/* PRNG deterministico col seme: nelle sfide dirette di coppa i mazzi di OGNI smazzata (supplementari
+   e rigori compresi) nascono in locale dallo stesso seme pubblicato dall'host — niente mazzi sul cloud. */
+function mulberry32(seed){return function(){seed|=0;seed=seed+0x6D2B79F5|0;let t=Math.imul(seed^seed>>>15,1|seed);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
 
 /* Gioca una carta. optIdx sceglie tra le opzioni di presa. */
 function playCard(G,side,handIdx,optIdx){
@@ -1168,7 +1174,6 @@ I18N.it={
  mpc_oppturn:"Sta scegliendo l'amico",
  mpc_done:'Squadre assegnate: si parte!',
  mpc_you:'TU', mpc_friend:'AMICO', mpc_ia:'IA',
- mpc_legend:'⭐ tue · 🤝 amico',
  mpc_wait_friend:"Hai giocato le tue partite della giornata: si aspetta l'amico. I risultati arrivano da soli.",
  btn_duel:'🤝 Sfida diretta', btn_waitf:"⏳ Aspetta l'amico",
  mpc_duel_wait:"Sfida diretta: in attesa dell'amico",
@@ -1179,7 +1184,8 @@ I18N.it={
  q_mpc_exit:'La coppa resta salvata (anche per l\'amico): la riprendi da Multiplayer → Riprendi la coppa. Esci?',
  mpc_resume:'Riprendi la coppa',
  mpc_gone:'Coppa non trovata (chiusa o scaduta).',
- mpc_groupdone:'Girone concluso! La fase a eliminazione arriva col prossimo aggiornamento della beta.',
+ tipo_cupmp:'Coppa multiplayer',
+ q_mpc_finish:'La coppa è conclusa e il trofeo è nello Storico Coppe. Chiudere la stanza (vale per tutti e due)?',
  // opzioni e impostazioni
  opt_teams:'Squadre', opt_rules:'Regole', opt_history:'Storico Coppe',
  set_saves:'Salvataggi', set_lang:'Lingua',
@@ -1383,7 +1389,6 @@ I18N.en={
  mpc_oppturn:'Your friend is picking',
  mpc_done:'Teams assigned: here we go!',
  mpc_you:'YOU', mpc_friend:'FRIEND', mpc_ia:'AI',
- mpc_legend:'⭐ yours · 🤝 friend',
  mpc_wait_friend:"You've played your matches for this round: waiting for your friend. Results arrive on their own.",
  btn_duel:'🤝 Head-to-head', btn_waitf:'⏳ Wait for your friend',
  mpc_duel_wait:'Head-to-head: waiting for your friend',
@@ -1394,7 +1399,8 @@ I18N.en={
  q_mpc_exit:'The cup stays saved (for your friend too): resume it from Multiplayer → Resume the cup. Leave?',
  mpc_resume:'Resume the cup',
  mpc_gone:'Cup not found (closed or expired).',
- mpc_groupdone:'Group stage complete! The knockout phase arrives with the next beta update.',
+ tipo_cupmp:'Multiplayer cup',
+ q_mpc_finish:'The cup is over and the trophy is in your Cup History. Close the room (for both of you)?',
  // options & settings
  opt_teams:'Teams', opt_rules:'Rules', opt_history:'Cup History',
  set_saves:'Saves', set_lang:'Language',
@@ -2095,7 +2101,7 @@ function archiveTour(){
   }
   const sc=Object.entries(TOUR.scorers).map(([k,g])=>{const p=k.split('|');return {team:p[0],name:p[1],num:p[2],g};}).sort((a,b)=>b.g-a.g);
   const capo=sc.length?sc.filter(s=>s.g===sc[0].g):[];
-  HIST.push({date:new Date().toLocaleDateString(LANG==='it'?'it-IT':'en-GB'),name:TOUR.name||T.default_tour,tipo:TOUR.type==='cup'?T.tipo_cup:T.tipo_league,
+  HIST.push({date:new Date().toLocaleDateString(LANG==='it'?'it-IT':'en-GB'),name:TOUR.name||T.default_tour,tipo:TOUR.type==='cup'?(TOUR.mp?T.tipo_cupmp:T.tipo_cup):T.tipo_league,
     era:TOUR.era?eraLbl(TOUR.era):'',
     winner:wT.name,winnerClub:wT.club||wT.name,second:sT?sT.name:'',capo,teams:TOUR.teams.map(t=>t.name)});
   saveHist();saveTour();
@@ -2127,7 +2133,7 @@ function tourStandings(){
     else if(mt.gh<mt.ga){A.V++;H.S++;A.Pt+=3;}
     else{H.N++;A.N++;H.Pt++;A.Pt++;}
   });
-  st.sort((a,b)=>b.Pt-a.Pt||(b.GF-b.GS)-(a.GF-a.GS)||b.GF-a.GF||a.name.localeCompare(b.name));
+  st.sort((a,b)=>b.Pt-a.Pt||(b.GF-b.GS)-(a.GF-a.GS)||b.GF-a.GF||(a.name<b.name?-1:a.name>b.name?1:0)); // confronto SEMPLICE, non localeCompare: nel multiplayer i due dispositivi devono ordinare IDENTICO (da qui nascono le teste di serie del KO)
   return st;
 }
 var pendingPreset=null; // se il torneo nasce da un preset, è una competizione ufficiale di CARRIERA
@@ -2145,14 +2151,14 @@ function renderTourSetup(){
 }
 /* ===== Tabellone visivo della fase a eliminazione ===== */
 function tourMine(i){return TOUR.mp?TOUR.owners[i]===TOUR.mp.role:i===TOUR.user;} // "mia" anche in multiplayer (owner, non user)
-function tourOwnMark(i){ // ⭐ = tua squadra; nella coppa multiplayer 🤝 = squadra dell'amico
-  if(!TOUR.mp)return i===TOUR.user?' ⭐':'';
-  const o=TOUR.owners[i];return o===TOUR.mp.role?' ⭐':(o==='ia'?'':' 🤝');
+function tourOwnMark(i){ // ⭐ solo in solitaria; in multiplayer NIENTE iconcine (Enrico 2026-08-02): le tue si vedono in ORO, come sempre
+  return (!TOUR.mp&&i===TOUR.user)?' ⭐':'';
 }
 function koWinnerOfSlot(r,i){const t=TOUR.ko&&TOUR.ko.rounds[r]&&TOUR.ko.rounds[r].ties[i];return t?tieWinner(t):null;}
 function brTeamRow(idx,score,win,tbd){
   const name=(idx==null)?'—':TOUR.teams[idx].name+tourOwnMark(idx);
-  return `<div class="bteam${win?' win':''}${tbd?' tbd':''}"><span class="bnm">${name}${win?' ✓':''}</span><span class="bsc">${score===''||score==null?'':score}</span></div>`;
+  const mine=idx!=null&&TOUR.mp&&tourMine(idx); // in multiplayer le tue nel tabellone sono in oro (niente iconcine)
+  return `<div class="bteam${win?' win':''}${tbd?' tbd':''}"><span class="bnm"${mine?' style="color:var(--oro)"':''}>${name}${win?' ✓':''}</span><span class="bsc">${score===''||score==null?'':score}</span></div>`;
 }
 function brTieBox(r,i){
   const t=TOUR.ko&&TOUR.ko.rounds[r]&&TOUR.ko.rounds[r].ties[i];
@@ -2179,8 +2185,8 @@ function renderBracket(){
     pair.forEach(([x,y])=>{
       const A=st[x], B=st[y];
       h+=`<div class="btie">`+
-         `<div class="bteam${A?'':' tbd'}"><span class="bnm">${A?A.name+tourOwnMark(A.i):'—'}</span><span class="bsc">${fmt(T.seed_n,x+1)}</span></div>`+
-         `<div class="bteam${B?'':' tbd'}"><span class="bnm">${B?B.name+tourOwnMark(B.i):'—'}</span><span class="bsc">${fmt(T.seed_n,y+1)}</span></div>`+
+         `<div class="bteam${A?'':' tbd'}"><span class="bnm"${A&&TOUR.mp&&tourMine(A.i)?' style="color:var(--oro)"':''}>${A?A.name+tourOwnMark(A.i):'—'}</span><span class="bsc">${fmt(T.seed_n,x+1)}</span></div>`+
+         `<div class="bteam${B?'':' tbd'}"><span class="bnm"${B&&TOUR.mp&&tourMine(B.i)?' style="color:var(--oro)"':''}>${B?B.name+tourOwnMark(B.i):'—'}</span><span class="bsc">${fmt(T.seed_n,y+1)}</span></div>`+
          `</div>`;
     });
     h+=`</div></div></div>`;
@@ -2203,16 +2209,16 @@ function renderTour(){
   const st=tourStandings();
   const done=tourDone();
   if(done&&!TOUR.archived){
-    if(TOUR.career)archiveTour(); // solo la carriera entra in albo d'oro e bacheca
+    if(TOUR.career||TOUR.mp)archiveTour(); // carriera E coppa multiplayer entrano nello Storico Coppe (su ciascun dispositivo il suo)
     else{TOUR.archived=true;saveTour();}
   }
   $('tour-title').textContent=(TOUR.career?'⭐ ':'')+(done?fmt(T.tt_done,tourChampionName()):fmt(T.tt_run,TOUR.name||T.default_tour,TOUR.teams.length));
   const phase=(TOUR.type==='cup')?(TOUR.phase==='ko'?koRoundNames(TOUR.koQual)[TOUR.ko.stage]:T.phase_grp):(TOUR.double?T.phase_ar:T.phase_sa); // nome del turno ricalcolato (segue la lingua, non quello salvato)
   const eraL=TOUR.era?' · '+eraLbl(TOUR.era):'';
-  $('tour-status').textContent=`${phase}${eraL}${TOUR.mp?' · '+T.mpc_legend:fmt(T.youlead,TOUR.teams[TOUR.user].name)}`;
-  // classifica (vista principale)
+  $('tour-status').textContent=`${phase}${eraL}${TOUR.mp?'':fmt(T.youlead,TOUR.teams[TOUR.user].name)}`;
+  // classifica (vista principale): le TUE righe in oro (classe me), in solitaria e in multiplayer — niente iconcine
   $('tour-table').innerHTML=`<tr><th class="tn">${T.tblh[0]}</th>${T.tblh.slice(1).map(x=>`<th>${x}</th>`).join('')}</tr>`+
-    st.map(s=>`<tr class="${tourMine(s.i)?'me':''}"><td class="tn">${s.name}${TOUR.mp?tourOwnMark(s.i):''}</td><td><b>${s.Pt}</b></td><td>${s.P}</td><td>${s.V}</td><td>${s.N}</td><td>${s.S}</td><td>${s.GF}</td><td>${s.GS}</td><td>${s.GF-s.GS}</td></tr>`).join('');
+    st.map(s=>`<tr class="${tourMine(s.i)?'me':''}"><td class="tn">${s.name}</td><td><b>${s.Pt}</b></td><td>${s.P}</td><td>${s.V}</td><td>${s.N}</td><td>${s.S}</td><td>${s.GF}</td><td>${s.GS}</td><td>${s.GF-s.GS}</td></tr>`).join('');
   // marcatori (vista su richiesta): gol + nome, con (squadra, n.maglia) accanto al nome
   const sc=Object.entries(TOUR.scorers).map(([k,g])=>{const p=k.split('|');return {team:p[0],name:p[1],num:p[2],g};}).sort((a,b)=>b.g-a.g).slice(0,10);
   $('tour-scorers').innerHTML=sc.length?sc.map(s=>`<div class="scr-row"><span class="scr-g">${s.g}</span><span class="scr-n">${s.name}<span class="scr-sub">(${s.team}, n.${s.num})</span></span></div>`).join('')+'<div class="trow" style="opacity:.55; font-size:.5rem; text-align:center;">'+T.top10+'</div>':'<div class="trow">'+T.nogoals+'</div>';
@@ -2593,8 +2599,9 @@ async function shootRound(){
   logLines=[];
   addLog(T.log_shootout);
   const aiStarts=G.turn==='ai';
-  showFieldNote(T.fn_pens,fmt(T.fn_pens2,aiStarts?T.fn_touch:''));
+  showFieldNote(T.fn_pens,fmt(T.fn_pens2,(aiStarts&&!G.mp)?T.fn_touch:''));
   if(aiStarts){
+    if(G.mp){busy=false;return;} // sfida di coppa: il rigore dell'avversario arriva dalla stanza, non dall'IA
     busy=true;
     pendingStart=async()=>{await sleep(400);const ch=aiChoose(G,'ai');await doPlay('ai',ch.handIdx,ch.optIdx);};
   }else busy=false;
@@ -2674,7 +2681,9 @@ const RULES=[
    <h5>La rivincita</h5>
    <p>A fine partita il pulsante <b>Rigioca</b> chiede la rivincita nella stessa stanza: quando entrambi lo premono si riparte, stesse squadre, nuova monetina e nuovo mazzo.</p>
    <h5>Se cade la connessione</h5>
-   <p>Nessuna partita persa: chi resta in campo vede l'avviso e <b>aspetta senza fretta</b> (o esce con ✖); chi è caduto torna nel menu Multiplayer e trova <b>"Riprendi la partita"</b> — si rientra esattamente dov'era, stesse carte e stesso punteggio. Vale anche se la pagina si chiude per sbaglio.</p>`},
+   <p>Nessuna partita persa: chi resta in campo vede l'avviso e <b>aspetta senza fretta</b> (o esce con ✖); chi è caduto torna nel menu Multiplayer e trova <b>"Riprendi la partita"</b> — si rientra esattamente dov'era, stesse carte e stesso punteggio. Vale anche se la pagina si chiude per sbaglio.</p>
+   <h5>La coppa in due</h5>
+   <p>Da Multiplayer → <b>Crea una coppa</b> giochi un'intera coppa con un amico: le squadre si scelgono <b>a turno, una a testa</b> (le altre le guida l'IA), poi girone e fase finale come nella coppa normale. Ognuno gioca le proprie partite dal suo dispositivo, <b>anche in contemporanea</b>; quando le vostre squadre si incontrano è <b>sfida diretta</b>, supplementari e rigori compresi. La coppa <b>resta salvata per un mese</b>: si esce e si riprende un altro giorno da "Riprendi la coppa", e il trofeo finisce nello <b>Storico Coppe</b> di entrambi. Attenzione: abbandonarla (o uscire da una sfida diretta) la chiude <b>per tutti e due</b>.</p>`},
  {t:'Spareggi',h:`<h5>In campionato e nei gironi</h5>
    <p>Il pareggio è un risultato valido (1 punto a testa). A pari punti in classifica decidono <b>la differenza reti e poi i gol fatti</b>, come nella realtà: nessuno spareggio.</p>
    <h5>Supplementari</h5>
@@ -2728,7 +2737,9 @@ I18N.en.rules=[
    <h5>The rematch</h5>
    <p>At full time the <b>Rematch</b> button asks for a rematch in the same room: when both press it, play restarts — same teams, new coin toss, fresh deck.</p>
    <h5>If the connection drops</h5>
-   <p>No match is ever lost: the player still on the pitch sees a notice and <b>waits, no rush</b> (or leaves with ✖); the one who dropped goes back to the Multiplayer menu and finds <b>"Resume the match"</b> — back exactly where it was, same cards, same score. It also works if the page gets closed by mistake.</p>`},
+   <p>No match is ever lost: the player still on the pitch sees a notice and <b>waits, no rush</b> (or leaves with ✖); the one who dropped goes back to the Multiplayer menu and finds <b>"Resume the match"</b> — back exactly where it was, same cards, same score. It also works if the page gets closed by mistake.</p>
+   <h5>The two-player cup</h5>
+   <p>From Multiplayer → <b>Create a cup</b> you play a whole cup with a friend: teams are picked <b>in turns, one each</b> (the AI runs the rest), then group stage and knockout phase just like the regular cup. Each of you plays your own matches on your own device, <b>even at the same time</b>; when your teams meet it's a <b>head-to-head match</b>, extra time and penalties included. The cup <b>stays saved for a month</b>: leave and resume another day via "Resume the cup", and the trophy goes into <b>both players' Cup History</b>. Careful: abandoning it (or leaving a head-to-head match) closes it <b>for both of you</b>.</p>`},
  {t:'Tie-breaks',h:`<h5>In leagues and groups</h5>
    <p>A draw is a valid result (1 point each). If teams finish level on points, <b>goal difference and then goals scored</b> decide, like in real life: no play-off.</p>
    <h5>Extra time</h5>
@@ -3222,7 +3233,9 @@ function tourRecordMatch(){
   if(G&&G.tour&&G.tour.mpc){mpcRecordMatch();return;} // coppa multiplayer: il risultato viaggia sul cloud
   if(TOUR)delete TOUR.liveG; // partita registrata = niente più sospesa (il saveTour a valle persiste)
   if(G.tour.ko){
-    const t=G.tour.tie;
+    // il tie va ripescato per INDICE dal tabellone vero: G.tour.tie può essere una copia staccata
+    // (partita congelata passata per JSON.parse/stringify) e il risultato andrebbe perso (fix 2026-08-02)
+    const t=(G.tour.ti!=null&&TOUR.ko&&TOUR.ko.rounds[TOUR.ko.stage].ties[G.tour.ti])?TOUR.ko.rounds[TOUR.ko.stage].ties[G.tour.ti]:G.tour.tie;
     const L=G.tour.leg===1?t.l1:t.l2;
     L.gh=G.tour.meIsHome?G.score.me:G.score.ai;
     L.ga=G.tour.meIsHome?G.score.ai:G.score.me;
@@ -3377,10 +3390,12 @@ function mpAbort(msg){ // l'avversario ha abbandonato: si chiude con onore
 function mpHalfTime(){ // intervallo: l'host prepara subito la smazzata del 2° tempo
   if(!MP)return;
   MP.live=false;MP.wait2=false;
+  if(MP.duel)return; // sfida di coppa: il mazzo del 2° tempo nasce dal seme condiviso, niente da pubblicare
   if(MP.role==='host'&&!MP.deal2Sent){MP.deal2Sent=true;try{MP.ref.child('deals/2').set(mpMakeDeal());}catch(e){}}
 }
 function mpSecondHalf(){ // "Inizia 2° tempo": si parte con la smazzata pubblicata (o la si aspetta)
   if(!MP)return;
+  if(MP.duel){beginHalf(2);MP.live=true;mpPump();return;} // sfida di coppa: smazzata dal seme, si riparte e la coda scorre
   if(MP.deal2){mpStartHalf2();return;}
   MP.wait2=true;
   show('scr-match');
@@ -3624,38 +3639,95 @@ function mpcBuildTour(cfg,picks,mp){ // stessi ingredienti → stessa coppa su e
     schedule:genCalendar(cfg.pool.length,!!cfg.double),scorers:{},archived:false,created:Date.now(),
     keep:{},mp};
 }
-function mpcTasks(tour,role){ // cosa prevede la giornata corrente per questo giocatore (null = girone finito)
+function mpcTasks(tour,role){ // cosa prevede la mano corrente (giornata del girone o mano del KO) per questo giocatore; null = niente da fare (torneo finito o turno da avanzare)
+  const other=role==='h'?'g':'h';
   const first=tour.schedule.find(mt=>!mt.played);
-  if(!first)return null;
-  const day=first.g, other=role==='h'?'g':'h';
-  const tk={day,iaia:[],mine:[],theirs:[],duels:[]};
-  tour.schedule.forEach((mt,mi)=>{
-    if(mt.g!==day||mt.played)return;
-    const oh=tour.owners[mt.h],oa=tour.owners[mt.a];
-    if(oh==='ia'&&oa==='ia')tk.iaia.push(mi);
-    else if((oh===role&&oa===other)||(oh===other&&oa===role))tk.duels.push(mi); // sfida diretta
-    else if(oh===role||oa===role)tk.mine.push(mi); // vs IA, oppure auto-incrocio (entrambe mie)
-    else tk.theirs.push(mi); // partite dell'amico: si aspettano i suoi risultati
+  if(first){ // GIRONE
+    const day=first.g;
+    const tk={phase:'group',day,iaia:[],mine:[],theirs:[],duels:[]};
+    tour.schedule.forEach((mt,mi)=>{
+      if(mt.g!==day||mt.played)return;
+      const oh=tour.owners[mt.h],oa=tour.owners[mt.a];
+      if(oh==='ia'&&oa==='ia')tk.iaia.push(mi);
+      else if((oh===role&&oa===other)||(oh===other&&oa===role))tk.duels.push(mi); // sfida diretta
+      else if(oh===role||oa===role)tk.mine.push(mi); // vs IA, oppure auto-incrocio (entrambe mie)
+      else tk.theirs.push(mi); // partite dell'amico: si aspettano i suoi risultati
+    });
+    tk.duelReady=tk.duels.length>0&&tk.mine.length===0&&tk.theirs.length===0&&tk.iaia.length===0; // la sfida chiude la giornata
+    return tk;
+  }
+  // FASE KO (il tabellone viene costruito/avanzato da mpcSync prima di chiamare qui)
+  if(tour.phase!=='ko'||!tour.ko)return null;
+  const r=tour.ko.rounds[tour.ko.stage];
+  if(!r.ties.length||r.ties.every(t=>tieWinner(t)!==null))return null; // turno completo (koAdvance o torneo finito)
+  const leg=r.ties.some(t=>!t.l1.played)?1:2; // prima tutte le andate, poi i ritorni (mano per mano, come in solitaria)
+  const tk={phase:'ko',stage:tour.ko.stage,leg,iaia:[],mine:[],theirs:[],duels:[]};
+  r.ties.forEach((t,ti)=>{
+    const L=leg===1?t.l1:t.l2;
+    if(!L||L.played)return;
+    const oh=tour.owners[t.a],oa=tour.owners[t.b];
+    if(oh==='ia'&&oa==='ia')tk.iaia.push(ti);
+    else if((oh===role&&oa===other)||(oh===other&&oa===role))tk.duels.push(ti);
+    else if(oh===role||oa===role)tk.mine.push(ti);
+    else tk.theirs.push(ti);
   });
-  tk.duelReady=tk.duels.length>0&&tk.mine.length===0&&tk.theirs.length===0&&tk.iaia.length===0; // la sfida chiude la giornata
+  tk.duelReady=tk.duels.length>0&&tk.mine.length===0&&tk.theirs.length===0&&tk.iaia.length===0;
   return tk;
+}
+function mpcKey(tk,x){return tk.phase==='ko'?('k'+tk.stage+'_'+x+'_'+tk.leg):('m'+x);} // nome del verbale sul cloud
+function mpcSync(tour){ // porta avanti ciò che non richiede nessuno: costruzione del tabellone e avanzamento dei turni (deterministico, uguale sui due dispositivi)
+  if(tour.type==='cup'&&tour.phase==='group'&&!tour.schedule.find(mt=>!mt.played)){buildKO();currentTourTab='brk';}
+  if(tour.phase==='ko'&&tour.ko)koAdvance(); // idempotente: se il turno non è completo non fa nulla
+}
+function mpcResPlaced(tour,key){ // questo verbale è già nel torneo locale?
+  let m=/^m(\d+)$/.exec(key);
+  if(m){const mt=tour.schedule[+m[1]];return !!(mt&&mt.played);}
+  m=/^k(\d+)_(\d+)_([12])$/.exec(key);
+  if(!m||!tour.ko)return false;
+  const r=tour.ko.rounds[+m[1]];if(!r)return false;
+  const t=r.ties[+m[2]];if(!t)return false;
+  const L=+m[3]===1?t.l1:t.l2;
+  return !!(L&&L.played);
 }
 function mpcResPayload(g,meIsHome,hIdx,aIdx){ // il verbale che viaggia: risultato + marcatori (indici squadra del torneo)
   const sc=g.scorers.map(s=>[(s.side==='me')===meIsHome?hIdx:aIdx,s.name,s.num]);
   return {gh:meIsHome?g.score.me:g.score.ai, ga:meIsHome?g.score.ai:g.score.me, sc};
 }
 function mpcApplyRes(tour,key,res){ // applica un verbale al torneo locale (idempotente: doppioni ignorati)
-  if(!/^m\d+$/.test(key)||!res)return false;
-  const mi=+key.slice(1), mt=tour.schedule[mi];
-  if(!mt||mt.played)return false;
-  mt.gh=res.gh;mt.ga=res.ga;mt.played=true;
-  (res.sc||[]).forEach(p=>{
+  if(!res)return false;
+  const addSc=()=>{(res.sc||[]).forEach(p=>{
     const k=tour.teams[p[0]].name+'|'+p[1]+'|'+p[2];
     tour.scorers[k]=(tour.scorers[k]||0)+1;
-  });
-  return true;
+  });};
+  let m=/^m(\d+)$/.exec(key);
+  if(m){ // girone
+    const mt=tour.schedule[+m[1]];
+    if(!mt||mt.played)return false;
+    mt.gh=res.gh;mt.ga=res.ga;mt.played=true;
+    addSc();return true;
+  }
+  m=/^k(\d+)_(\d+)_([12])$/.exec(key); // fase KO: k<turno>_<sfida>_<mano>
+  if(!m||!tour.ko)return false;
+  const r=tour.ko.rounds[+m[1]];if(!r)return false;
+  const t=r.ties[+m[2]];if(!t)return false;
+  const leg=+m[3], L=leg===1?t.l1:t.l2;
+  if(!L||L.played)return false;
+  L.gh=res.gh;L.ga=res.ga;L.played=true;
+  if(res.penW){ // deciso ai rigori: penW è la squadra di casa ('h') o di trasferta ('a') DI QUELLA MANO
+    t.pen=res.penW==='h'?(leg===1?t.a:t.b):(leg===1?t.b:t.a);
+    t.penScore=res.pen;
+  }
+  addSc();return true;
 }
 /* ----- setup e draft ----- */
+function refreshMpcPer(){ // squadre a testa: nessun tetto fisso — fino a METÀ dei partecipanti spuntati (chiesto da Enrico: il 4 era arbitrario)
+  const sel=$('mpc-per');if(!sel)return;
+  const n=CLUBS.filter((c,i)=>$('mc-'+i)&&$('mc-'+i).checked).length;
+  const max=Math.max(1,Math.floor(n/2)), prev=+sel.value||2;
+  sel.innerHTML='';
+  for(let k=1;k<=max;k++){const o=document.createElement('option');o.value=k;o.textContent=k;sel.appendChild(o);}
+  sel.value=Math.min(prev,max);
+}
 function renderMpcSetup(){
   const host=$('mpc-teams-pick');host.innerHTML='';
   host.insertAdjacentHTML('beforeend',`<label class="pick" style="border-color:var(--oro); grid-column:1/-1;"><input type="checkbox" id="mc-all" checked> ${T.sel_all}</label>`);
@@ -3663,8 +3735,10 @@ function renderMpcSetup(){
     host.insertAdjacentHTML('beforeend',`<div class="pick-country">${coLbl(c)}</div>`);
     list.forEach(i=>host.insertAdjacentHTML('beforeend',`<label class="pick"><input type="checkbox" id="mc-${i}" checked> ${CLUBS[i].club}</label>`));
   });
-  $('mc-all').onchange=()=>{CLUBS.forEach((c,i)=>{if($('mc-'+i))$('mc-'+i).checked=$('mc-all').checked;});};
+  CLUBS.forEach((c,i)=>{const cb=$('mc-'+i);if(cb)cb.onchange=refreshMpcPer;});
+  $('mc-all').onchange=()=>{CLUBS.forEach((c,i)=>{if($('mc-'+i))$('mc-'+i).checked=$('mc-all').checked;});refreshMpcPer();};
   fillEraSelect($('mpc-era'),false);
+  refreshMpcPer();
   $('mpc-msg').innerHTML=T.mpc_note;
 }
 function renderMpcDraft(){
@@ -3738,7 +3812,7 @@ async function mpcCreateCup(){
     }
     if(!code)throw new Error('nocode');
     const cfg={name,era,qual,double,per,pool,first:Math.random()<.5?'h':'g'}; // monetina del draft: chi sceglie per primo
-    MPC={role:'h',code,ref,cid:Math.random().toString(36).slice(2,10),offRefs:[],cfg,picks:[],guestIn:false,started:false,fresh:true,simSent:{},duelInit:{},armedDuel:null,keepFor:null};
+    MPC={role:'h',code,ref,cid:Math.random().toString(36).slice(2,10),offRefs:[],cfg,picks:[],guestIn:false,started:false,fresh:true,simSent:{},duelInit:{},resCache:{},armedDuel:null,keepFor:null};
     await ref.set({created:firebase.database.ServerValue.TIMESTAMP,touched:firebase.database.ServerValue.TIMESTAMP,cfg});
     ref.child('cid/h').set(MPC.cid); // firma della sedia (lezione del 2026-08-02: mai fidarsi del solo biglietto)
   }catch(e){MPC=null;show('scr-mpc-setup');askConfirm(T.mp_err_net,()=>{});return;}
@@ -3757,7 +3831,7 @@ async function mpcTryJoin(db,code){ // chiamata da mpJoinRoom quando il codice n
   const ref=db.ref('cups/'+code);
   const tx=await ref.child('guest').transaction(cur=>cur===null?true:undefined); // entra solo il primo
   if(!tx.committed){mpShowSetup();askConfirm(T.mp_err_full,()=>{});return true;}
-  MPC={role:'g',code,ref,cid:Math.random().toString(36).slice(2,10),offRefs:[],cfg:room.cfg,picks:[],guestIn:true,started:false,fresh:true,simSent:{},duelInit:{},armedDuel:null,keepFor:null};
+  MPC={role:'g',code,ref,cid:Math.random().toString(36).slice(2,10),offRefs:[],cfg:room.cfg,picks:[],guestIn:true,started:false,fresh:true,simSent:{},duelInit:{},resCache:{},armedDuel:null,keepFor:null};
   ref.child('cid/g').set(MPC.cid);
   ref.child('presence/g').set(true);
   ref.child('presence/g').onDisconnect().set(false);
@@ -3778,165 +3852,265 @@ function mpcStartCup(){ // draft completo: entrambi costruiscono la STESSA coppa
   currentTourTab='class';
   renderTour();show('scr-tour');
 }
-/* ----- motore giornate ----- */
-function mpcOnRes(key,res){ // un risultato è arrivato dalla stanza (mio, dell'amico o eco)
-  if(!TOUR||!TOUR.mp)return;
-  if(mpcApplyRes(TOUR,key,res)){
-    if(TOUR.liveG&&TOUR.liveG.tour&&('m'+TOUR.liveG.tour.mi)===key)delete TOUR.liveG;
-    saveTour();
-    mpcAutoSim();
-    if($('scr-tour').classList.contains('active'))renderTour();
+/* ----- motore giornate e mani KO ----- */
+function mpcDrain(){ // applica i verbali in attesa, avanzando torneo e tabellone finché qualcosa entra
+  if(!MPC||!TOUR||!TOUR.mp)return;
+  let changed=true;
+  while(changed){
+    changed=false;
+    mpcSync(TOUR);
+    Object.keys(MPC.resCache).forEach(k=>{
+      if(mpcApplyRes(TOUR,k,MPC.resCache[k]))changed=true;
+      if(mpcResPlaced(TOUR,k))delete MPC.resCache[k];
+    });
   }
+  saveTour();
 }
-function mpcAutoSim(){ // le IA-IA della giornata le simula SOLO l'host e pubblica i verbali
-  if(!MPC||MPC.role!=='h'||!TOUR||!TOUR.mp)return;
-  const tk=mpcTasks(TOUR,'h');
-  if(!tk||!tk.iaia.length)return;
-  tk.iaia.forEach(mi=>{
-    const k='m'+mi;
-    if(MPC.simSent[k])return;MPC.simSent[k]=true;
-    const mt=TOUR.schedule[mi], g=simMatch(TOUR.teams[mt.h],TOUR.teams[mt.a]);
-    const p=mpcResPayload(g,true,mt.h,mt.a);
-    mpcApplyRes(TOUR,k,p);
-    try{MPC.ref.child('res/'+k).set(p);}catch(e){}
-  });
-  saveTour();mpcTouch();
-  const t2=mpcTasks(TOUR,'h');
-  if(t2&&t2.day!==tk.day)mpcAutoSim(); // giornata di sole IA: si scorre subito alla prossima
+function mpcOnRes(key,res){ // un risultato è arrivato dalla stanza (mio, dell'amico o eco)
+  if(!MPC)return;
+  MPC.resCache[key]=res; // in dispensa: se il tabellone non è ancora a quel punto, entrerà al prossimo giro
+  if(!TOUR||!TOUR.mp)return;
+  mpcDrain();
+  if(TOUR.liveG&&mpcResPlaced(TOUR,mpcLiveKey()))delete TOUR.liveG; // qualcuno ha già registrato quella partita
+  mpcAutoSim();
   if($('scr-tour').classList.contains('active'))renderTour();
+}
+function mpcLiveKey(){ // il verbale della partita congelata (se c'è)
+  const g=TOUR&&TOUR.liveG;if(!g||!g.tour)return '';
+  return g.tour.ko?('k'+g.tour.st+'_'+g.tour.ti+'_'+g.tour.leg):('m'+g.tour.mi);
+}
+function mpcAutoSim(){ // le IA-IA (giornata o mano KO) le simula SOLO l'host e pubblica i verbali
+  if(!MPC||MPC.role!=='h'||!TOUR||!TOUR.mp)return;
+  let guard=0,touched=false;
+  while(guard++<300){
+    mpcSync(TOUR);
+    const tk=mpcTasks(TOUR,'h');
+    if(!tk||!tk.iaia.length)break;
+    let sent=0;
+    tk.iaia.forEach(x=>{
+      const key=mpcKey(tk,x);
+      if(MPC.simSent[key])return;
+      MPC.simSent[key]=true;sent++;touched=true;
+      let p;
+      if(tk.phase==='ko'){
+        const t=TOUR.ko.rounds[tk.stage].ties[x];
+        const hIdx=tk.leg===1?t.a:t.b, aIdx=tk.leg===1?t.b:t.a;
+        const g=simMatchX(TOUR.teams[hIdx],TOUR.teams[aIdx],t.single||tk.leg===2,tk.leg===2?(t.l1.ga-t.l1.gh):0);
+        p=mpcResPayload(g,true,hIdx,aIdx);
+        if(g.pen){p.pen=[g.pen.me,g.pen.ai];p.penW=g.pen.winner==='me'?'h':'a';}
+      }else{
+        const mt=TOUR.schedule[x], g=simMatch(TOUR.teams[mt.h],TOUR.teams[mt.a]);
+        p=mpcResPayload(g,true,mt.h,mt.a);
+      }
+      mpcApplyRes(TOUR,key,p);
+      try{MPC.ref.child('res/'+key).set(p);}catch(e){}
+    });
+    if(!sent)break;
+  }
+  if(touched){saveTour();mpcTouch();if($('scr-tour').classList.contains('active'))renderTour();}
 }
 function mpcHubButtons(){ // il pulsante verde racconta lo stato (chiamata da renderTour quando TOUR.mp)
   const play=$('tour-play'), sim=$('tour-sim');
+  if(tourDone()){play.style.display='none';sim.style.display='none';$('tour-abandon').style.display='none';$('tour-new').style.display='';return;} // coppa finita: resta solo "Nuova competizione" (l'albo è già aggiornato)
   $('tour-new').style.display='none';play.style.display='';play.style.opacity='';
   if(TOUR.liveG){sim.style.display='none';return;} // etichetta già "Riprendi la partita sospesa"
   const tk=mpcTasks(TOUR,TOUR.mp.role);
-  if(!tk){play.style.display='none';sim.style.display='none';$('tour-status').textContent=T.mpc_groupdone;return;}
+  if(!tk){play.textContent=T.btn_waitf;play.style.opacity='.75';sim.style.display='none';return;} // transitorio (turno in avanzamento)
   if(tk.mine.length){play.textContent=T.btn_next;sim.style.display='';}
   else if(tk.duels.length&&tk.duelReady){play.textContent=T.btn_duel;sim.style.display='none';}
   else{play.textContent=T.btn_waitf;play.style.opacity='.75';sim.style.display='none';}
-  if(MPC&&tk.duels.length)mpcArmDuel(tk.duels[0]); // orecchie già tese: se l'amico è pronto, si parte insieme
+  if(MPC&&tk.duels.length)mpcArmDuel(tk,tk.duels[0]); // orecchie già tese: se l'amico è pronto, si parte insieme
 }
 function mpcNext(){ // "Prosegui" della coppa multiplayer
   if(!MPC){askConfirm(T.mp_err_net,()=>{});return;}
   if(TOUR.liveG){if(liveRestore(TOUR.liveG))return;renderTour();return;} // prima la sospesa
-  mpcAutoSim();
+  mpcDrain();mpcAutoSim();
+  if(tourDone()){renderTour();return;}
   const tk=mpcTasks(TOUR,MPC.role);
-  if(!tk){askConfirm(T.mpc_groupdone,()=>{});return;}
-  if(tk.mine.length){mpcPlay(tk.mine[0]);return;}
+  if(!tk){renderTour();return;}
+  if(tk.mine.length){mpcPlay(tk,tk.mine[0]);return;}
   if(tk.duels.length){
-    mpcArmDuel(tk.duels[0]);
-    if(tk.duelReady){mpcDuelGo(tk.duels[0]);return;}
+    mpcArmDuel(tk,tk.duels[0]);
+    if(tk.duelReady){mpcDuelGo(tk,tk.duels[0]);return;}
   }
   askConfirm(T.mpc_wait_friend,()=>{});
 }
-function mpcPlay(mi){ // la mia partita vs IA (o auto-incrocio: prima la scelta di quale guidare)
-  const mt=TOUR.schedule[mi], oh=TOUR.owners[mt.h], oa=TOUR.owners[mt.a], me=MPC.role;
-  if(oh===me&&oa===me&&TOUR.keep['m'+mi]==null){mpcAskKeep(mi);return;}
-  let myIdx=(oh===me)?mt.h:mt.a;
-  if(oh===me&&oa===me)myIdx=TOUR.keep['m'+mi];
-  const oppIdx=(myIdx===mt.h)?mt.a:mt.h, meIsHome=myIdx===mt.h;
+function mpcSides(tk,x){ // casa/trasferta della partita x nella mano corrente
+  if(tk.phase==='ko'){const t=TOUR.ko.rounds[tk.stage].ties[x];return tk.leg===1?{h:t.a,a:t.b,t}:{h:t.b,a:t.a,t};}
+  const mt=TOUR.schedule[x];return {h:mt.h,a:mt.a};
+}
+function mpcPlay(tk,x){ // la mia partita vs IA (o auto-incrocio: prima la scelta di quale guidare)
+  const s=mpcSides(tk,x), me=MPC.role, key=mpcKey(tk,x);
+  const oh=TOUR.owners[s.h], oa=TOUR.owners[s.a];
+  if(oh===me&&oa===me&&TOUR.keep[key]==null){mpcAskKeep(tk,x);return;}
+  let myIdx=(oh===me)?s.h:s.a;
+  if(oh===me&&oa===me)myIdx=TOUR.keep[key];
+  const oppIdx=(myIdx===s.h)?s.a:s.h, meIsHome=myIdx===s.h;
   const A=TOUR.teams[myIdx], B=TOUR.teams[oppIdx];
   G=newMatch(A,B);G.teamA=A;G.teamB=B;derbyMood(G,A,B);
-  G.tour={mi,meIsHome,mpc:true};
+  if(tk.phase==='ko'){
+    const prior=tk.leg===2?(s.t.l1.ga-s.t.l1.gh):0; // aggregato visto dalla casa del ritorno, come in solitaria
+    G.tour={ko:true,st:tk.stage,ti:x,leg:tk.leg,meIsHome,mustDecide:s.t.single||tk.leg===2,prior:meIsHome?prior:-prior,mpc:true};
+  }else G.tour={mi:x,meIsHome,mpc:true};
   applyKits(A,B);beginHalf(1);
 }
-function mpcAskKeep(mi){
-  const mt=TOUR.schedule[mi];
-  MPC.keepFor=mi;
-  $('mpc-keep-a').textContent=TOUR.teams[mt.h].name;
-  $('mpc-keep-b').textContent=TOUR.teams[mt.a].name;
+function mpcAskKeep(tk,x){
+  const s=mpcSides(tk,x);
+  MPC.keepFor={tk:{phase:tk.phase,stage:tk.stage,leg:tk.leg,day:tk.day},x,hIdx:s.h,aIdx:s.a};
+  $('mpc-keep-a').textContent=TOUR.teams[s.h].name;
+  $('mpc-keep-b').textContent=TOUR.teams[s.a].name;
   $('mpc-keep-modal').style.display='flex';
 }
 function mpcSimMine(){ // ⏩: simula la MIA prossima partita vs IA (mai la sfida diretta); auto-incrocio → IA vs IA
   if(!MPC)return;
   if(TOUR.liveG){if(liveRestore(TOUR.liveG))return;renderTour();return;}
-  mpcAutoSim();
+  mpcDrain();mpcAutoSim();
   const tk=mpcTasks(TOUR,MPC.role);
   if(!tk||!tk.mine.length){renderTour();return;}
-  const mi=tk.mine[0], mt=TOUR.schedule[mi], k='m'+mi;
-  const g=simMatch(TOUR.teams[mt.h],TOUR.teams[mt.a]);
-  const p=mpcResPayload(g,true,mt.h,mt.a);
-  mpcApplyRes(TOUR,k,p);saveTour();
-  try{MPC.ref.child('res/'+k).set(p);mpcTouch();}catch(e){}
-  mpcAutoSim();renderTour();
+  const x=tk.mine[0], s=mpcSides(tk,x), key=mpcKey(tk,x);
+  let p;
+  if(tk.phase==='ko'){
+    const g=simMatchX(TOUR.teams[s.h],TOUR.teams[s.a],s.t.single||tk.leg===2,tk.leg===2?(s.t.l1.ga-s.t.l1.gh):0);
+    p=mpcResPayload(g,true,s.h,s.a);
+    if(g.pen){p.pen=[g.pen.me,g.pen.ai];p.penW=g.pen.winner==='me'?'h':'a';}
+  }else{
+    const g=simMatch(TOUR.teams[s.h],TOUR.teams[s.a]);
+    p=mpcResPayload(g,true,s.h,s.a);
+  }
+  mpcApplyRes(TOUR,key,p);saveTour();
+  try{MPC.ref.child('res/'+key).set(p);mpcTouch();}catch(e){}
+  mpcDrain();mpcAutoSim();renderTour();
 }
 function mpcRecordMatch(){ // fine della mia partita di coppa MP: il verbale parte per la stanza
   if(!TOUR||!TOUR.mp){if(MP&&MP.duel){mpDetach();MP=null;}G=null;return;} // coppa già chiusa sotto i piedi (abbandono dell'amico)
-  const mi=G.tour.mi, mt=TOUR.schedule[mi], k='m'+mi;
-  const payload=mpcResPayload(G,G.tour.meIsHome,mt.h,mt.a);
+  const meIsHome=G.tour.meIsHome;
+  let key,hIdx,aIdx;
+  if(G.tour.ko){
+    const t=TOUR.ko.rounds[G.tour.st].ties[G.tour.ti];
+    hIdx=G.tour.leg===1?t.a:t.b;aIdx=G.tour.leg===1?t.b:t.a;
+    key='k'+G.tour.st+'_'+G.tour.ti+'_'+G.tour.leg;
+  }else{
+    const mt=TOUR.schedule[G.tour.mi];hIdx=mt.h;aIdx=mt.a;key='m'+G.tour.mi;
+  }
+  const payload=mpcResPayload(G,meIsHome,hIdx,aIdx);
+  if(G.shootResult){ // deciso ai rigori: punteggio e vincitore mappati su casa/trasferta della mano
+    payload.pen=meIsHome?[G.shootResult.me,G.shootResult.ai]:[G.shootResult.ai,G.shootResult.me];
+    payload.penW=((G.shootWinner==='me')===meIsHome)?'h':'a';
+  }
   if(MP&&MP.duel){mpDetach();MP=null;} // sfida diretta chiusa: giù i ganci della sotto-stanza
   delete TOUR.liveG;
-  mpcApplyRes(TOUR,k,payload); // nella sfida diretta lo pubblicano ENTRAMBI: stesso motore, stesso verbale (set idempotente)
-  saveTour();
-  if(MPC){try{MPC.ref.child('res/'+k).set(payload);mpcTouch();}catch(e){}}
+  MPC.resCache[key]=payload; // nella sfida diretta lo pubblicano ENTRAMBI: stesso motore, stesso verbale (set idempotente)
+  try{MPC.ref.child('res/'+key).set(payload);mpcTouch();}catch(e){}
+  mpcDrain();
   G=null;
   mpcAutoSim();
 }
-/* ----- sfida diretta: il protocollo 1v1 dentro la coppa (sotto-stanza duel/mX) ----- */
-function mpcArmDuel(mi){ // orecchie sulla sfida: init (si parte) e, per l'host, ready (pubblica il verbale d'inizio)
-  if(!MPC||MPC.armedDuel==='m'+mi)return;
-  MPC.armedDuel='m'+mi;
-  const dref=MPC.ref.child('duel/m'+mi);
+/* ----- sfida diretta: il protocollo mosse 1v1 dentro la coppa (sotto-stanza duel/<verbale>) -----
+   NIENTE mazzi sul cloud: nell'init viaggia un SEME (mulberry32) e ogni smazzata — secondo tempo,
+   supplementare, serie di rigori — nasce identica sui due dispositivi da startHalf/startShootout
+   col mazzo seminato e la distribuzione specchiata (G.flip). Viaggiano solo le mosse numerate. */
+function mpcArmDuel(tk,x){ // orecchie sulla sfida: init (si parte) e, per l'host, ready (pubblica il verbale d'inizio)
+  const key=mpcKey(tk,x);
+  if(!MPC||MPC.armedDuel===key)return;
+  MPC.armedDuel=key;
+  const dref=MPC.ref.child('duel/'+key);
   mpcOn(dref.child('init'),'value',s=>{
     const init=s.val();
     if(!init||!TOUR||!TOUR.mp||!MPC)return;
-    if(TOUR.schedule[init.mi].played)return; // eco tardiva
+    if(mpcResPlaced(TOUR,key))return; // eco tardiva: la sfida è già a verbale
     if(MP&&MP.duel)return; // già in campo
-    mpcDuelStart(init);
+    mpcDuelStart(key,init);
   });
   if(MPC.role==='h')mpcOn(dref.child('ready'),'value',s=>{
-    const r=s.val();
-    if(!r||!r.h||!r.g||!MPC||MPC.duelInit['m'+mi])return;
-    MPC.duelInit['m'+mi]=true;
-    const mt=TOUR.schedule[mi];
-    const thIdx=TOUR.owners[mt.h]==='h'?mt.h:mt.a, tgIdx=(thIdx===mt.h)?mt.a:mt.h;
-    try{dref.child('init').set({r:1,starter:Math.random()<.5?'host':'guest',th:TOUR.teams[thIdx],tg:TOUR.teams[tgIdx],deal:mpMakeDeal(),mi,hh:thIdx===mt.h});}catch(e){}
+    const rd=s.val();
+    if(!rd||!rd.h||!rd.g||!MPC||MPC.duelInit[key])return;
+    MPC.duelInit[key]=true;
+    const sd=mpcSides(tk,x);
+    const thIdx=TOUR.owners[sd.h]==='h'?sd.h:sd.a; // la squadra dell'host nel verbale è sempre th
+    const init={r:1,starter:Math.random()<.5?'host':'guest',seed:Math.floor(Math.random()*2147483647),
+      th:TOUR.teams[thIdx],tg:TOUR.teams[thIdx===sd.h?sd.a:sd.h],hh:thIdx===sd.h};
+    if(tk.phase==='ko')init.ko={st:tk.stage,ti:x,leg:tk.leg};else init.mi=x;
+    try{dref.child('init').set(init);}catch(e){}
   });
 }
-function mpcDuelGo(mi){ // "Sfida diretta": mi dichiaro pronto e aspetto l'amico (niente timer, solo attesa dichiarata)
-  mpcArmDuel(mi);
-  try{MPC.ref.child('duel/m'+mi+'/ready/'+MPC.role).set(true);}catch(e){}
+function mpcDuelGo(tk,x){ // "Sfida diretta": mi dichiaro pronto e aspetto l'amico (niente timer, solo attesa dichiarata)
+  mpcArmDuel(tk,x);
+  try{MPC.ref.child('duel/'+mpcKey(tk,x)+'/ready/'+MPC.role).set(true);}catch(e){}
   $('tour-status').textContent=T.mpc_duel_wait;
   const play=$('tour-play');play.textContent=T.btn_waitf;play.style.opacity='.75';
 }
-function mpcDuelListen(){ // ganci della sotto-stanza (mosse e 2a smazzata); l'abbandono passa dal quit della coppa
+function mpcDuelListen(){ // ganci della sotto-stanza: solo le mosse (mazzi dal seme); l'abbandono passa dal quit della coppa
   mpOn(MP.ref.child('moves'),'child_added',s=>{const m=s.val();if(!m||!MP)return;MP.queue[+s.key]=m;mpPump();});
-  mpOn(MP.ref.child('deals/2'),'value',s=>{const d=s.val();if(!d||!MP)return;MP.deal2=d;if(MP.wait2)mpStartHalf2();});
 }
-function mpcDuelStart(init){ // si gioca: MP punta alla sotto-stanza, il resto è il motore 1v1 collaudato
-  MP={role:MPC.role==='h'?'host':'guest',code:MPC.code,ref:MPC.ref.child('duel/m'+init.mi),cid:MPC.cid,duel:true,
+function mpcDuelBuild(init){ // costruisce G della sfida dal verbale: squadre, monetina, seme (mai un mazzo sul cloud)
+  const my=MP.role==='host'?init.th:init.tg, opp=MP.role==='host'?init.tg:init.th;
+  G=newMatch(my,opp,mulberry32(init.seed));
+  G.teamA=my;G.teamB=opp;
+  G.mp=true; // niente derbyMood: il jitter casuale divergerebbe tra i due schermi
+  G.flip=(MP.role==='guest');
+  G.starter1=((init.starter==='host')===(MP.role==='host'))?'me':'ai';
+  const meIsHome=(MP.role==='host')===!!init.hh;
+  if(init.ko){
+    const t=TOUR.ko.rounds[init.ko.st].ties[init.ko.ti];
+    const prior=init.ko.leg===2?(t.l1.ga-t.l1.gh):0;
+    G.tour={ko:true,st:init.ko.st,ti:init.ko.ti,leg:init.ko.leg,meIsHome,mustDecide:t.single||init.ko.leg===2,prior:meIsHome?prior:-prior,mpc:true};
+  }else G.tour={mi:init.mi,meIsHome,mpc:true};
+  applyKits(my,opp);
+  startHalf(G,1); // mazzo dal seme, mani specchiate da G.flip
+}
+function mpcDuelStart(key,init){ // si gioca: MP punta alla sotto-stanza, il resto è il motore collaudato
+  MP={role:MPC.role==='h'?'host':'guest',code:MPC.code,ref:MPC.ref.child('duel/'+key),cid:MPC.cid,duel:true,
       myTeam:null,oppTeam:null,round:1,rematchSent:9e9,applied:0,queue:{},live:false,pumping:false,started:true,initSent:true,
       deal2:null,deal2Sent:false,wait2:false,done:false,oppOff:false,offRefs:[]};
   MP.myTeam=MP.role==='host'?init.th:init.tg;MP.oppTeam=MP.role==='host'?init.tg:init.th;
   mpcDuelListen();
-  mpBuildG(init);
-  G.tour={mi:init.mi,meIsHome:(MP.role==='host')===!!init.hh,mpc:true}; // niente rivincita: il tabellino riporta al torneo
+  mpcDuelBuild(init);
   beginHalfUI(1);
   MP.live=true;mpPump();
 }
-function mpcDuelRejoin(d){ // rientro a sfida in corso: verbale + mosse rigiocate col motore deterministico (come l'1v1)
+function duelStep(G){ // replica PURA della decisione di endHalf a fine smazzata (per il replay del rientro)
+  if(G.half===1)return 'interval';
+  if(G.shootMode){
+    const dMe=G.score.me-G.shootBase.me, dAi=G.score.ai-G.shootBase.ai;
+    return dMe===dAi?'series':'end';
+  }
+  if(G.tour&&G.tour.mustDecide&&((G.tour.prior||0)+G.score.me-G.score.ai)===0)
+    return G.extraPlayed?'shoot':'extra';
+  return 'end';
+}
+function duelFinishShoot(G){ // chiusura rigori come in endHalf: risultato ufficiale = campo, gol dei rigori fuori dal tabellino
+  const dMe=G.score.me-G.shootBase.me, dAi=G.score.ai-G.shootBase.ai;
+  G.shootResult={me:dMe,ai:dAi};G.shootWinner=dMe>dAi?'me':'ai';
+  G.scorers.length=G.shootScorersLen;G.score={...G.shootBase};G.shootMode=false;
+}
+function mpcDuelRejoin(key,d){ // rientro a sfida in corso: init + mosse rigiocate col motore deterministico, supplementari e rigori compresi
   const init=d.init;
-  MP={role:MPC.role==='h'?'host':'guest',code:MPC.code,ref:MPC.ref.child('duel/m'+init.mi),cid:MPC.cid,duel:true,
+  MP={role:MPC.role==='h'?'host':'guest',code:MPC.code,ref:MPC.ref.child('duel/'+key),cid:MPC.cid,duel:true,
       myTeam:null,oppTeam:null,round:1,rematchSent:9e9,applied:0,queue:{},live:false,pumping:false,started:true,initSent:true,
-      deal2:(d.deals&&d.deals['2'])||null,deal2Sent:!!(d.deals&&d.deals['2']),wait2:false,done:false,oppOff:false,offRefs:[]};
+      deal2:null,deal2Sent:false,wait2:false,done:false,oppOff:false,offRefs:[]};
   MP.myTeam=MP.role==='host'?init.th:init.tg;MP.oppTeam=MP.role==='host'?init.tg:init.th;
-  mpBuildG(init);
-  G.tour={mi:init.mi,meIsHome:(MP.role==='host')===!!init.hh,mpc:true};
+  mpcDuelBuild(init);
   const moves=[];if(d.moves)Object.keys(d.moves).forEach(k=>{moves[+k]=d.moves[k];});
-  let atBreak=false;
+  let atBreak=false,fin=false;
   for(let n=0;n<moves.length;n++){
     const m=moves[n];if(!m)break;
     MP.applied=n+1;
     const side=((m.s==='h')===(MP.role==='host'))?'me':'ai';
     const r=playCard(G,side,m.h,m.o||0);
     if(r.endOfHalf){
-      if(G.half===1&&MP.deal2&&moves[n+1]!==undefined)mpApplyDeal(2,MP.deal2);
-      else{atBreak=true;break;}
+      const st=duelStep(G);
+      if(st==='interval'){
+        if(moves[n+1]===undefined){atBreak=true;break;}
+        startHalf(G,2); // stesso seme, stesso mazzo del vivo
+      }else if(st==='extra'){G.extraPlayed=true;startHalf(G,G.half+1);}
+      else if(st==='shoot'){G.shootMode=true;G.shootBase={me:G.score.me,ai:G.score.ai};G.shootScorersLen=G.scorers.length;startShootout(G);}
+      else if(st==='series'){startShootout(G);} // serie ribattuta: si continua sullo stesso flusso del seme
+      else{ if(G.shootMode)duelFinishShoot(G); fin=true;break; }
     }
   }
   mpcDuelListen();
   pendingStart=null;
-  if(atBreak){MP.live=false;endHalf();return;}
+  if(fin||atBreak){MP.live=false;G.mp=true;endHalf();return;} // intervallo o tabellino: endHalf rimette la schermata giusta
   show('scr-match');
   drawSprites();renderAll();
   logLines=[];addLog(`<span class="evt">${T.mp_resumed}</span>`);
@@ -3985,7 +4159,7 @@ async function mpcResumeCup(){ // dal biglietto: si ricostruisce TUTTO dal cloud
   if(mk.cid){if(cids.h===mk.cid)role='h';else if(cids.g===mk.cid)role='g';} // la sedia la dice la FIRMA (lezione 2026-08-02)
   if(room.presence&&room.presence[role]===true){UI.toMp();askConfirm(T.mp_err_full,()=>{});return;}
   const ref=db.ref('cups/'+mk.code);
-  MPC={role,code:mk.code,ref,cid:mk.cid,offRefs:[],cfg:room.cfg,picks:[],guestIn:!!room.guest,started:false,simSent:{},duelInit:{},armedDuel:null,keepFor:null};
+  MPC={role,code:mk.code,ref,cid:mk.cid,offRefs:[],cfg:room.cfg,picks:[],guestIn:!!room.guest,started:false,simSent:{},duelInit:{},resCache:{},armedDuel:null,keepFor:null};
   ref.child('presence/'+role).set(true);
   ref.child('presence/'+role).onDisconnect().set(false);
   mpcMark();mpcTouch();
@@ -3996,22 +4170,23 @@ async function mpcResumeCup(){ // dal biglietto: si ricostruisce TUTTO dal cloud
   }
   MPC.picks=picksArr;MPC.started=true;
   TOUR=mpcBuildTour(room.cfg,picksArr,{code:mk.code,role,cid:mk.cid});
-  if(room.res)Object.keys(room.res).forEach(k=>{mpcApplyRes(TOUR,k,room.res[k]);MPC.simSent[k]=true;});
+  if(room.res)Object.keys(room.res).forEach(k=>{MPC.resCache[k]=room.res[k];MPC.simSent[k]=true;});
+  mpcDrain(); // i verbali entrano in ordine, costruendo e avanzando anche il tabellone KO
   try{ // la partita congelata vs IA e le scelte d'auto-incrocio vivono solo su questo dispositivo (specchio locale)
     const mir=JSON.parse(localStorage.getItem('soccercard_mpc_tour')||'null');
     if(mir&&mir.mp&&mir.mp.code===mk.code){
       TOUR.keep=mir.keep||{};
-      if(mir.liveG&&mir.liveG.tour&&TOUR.schedule[mir.liveG.tour.mi]&&!TOUR.schedule[mir.liveG.tour.mi].played)TOUR.liveG=mir.liveG;
+      if(mir.liveG&&mir.liveG.tour){TOUR.liveG=mir.liveG;if(mpcResPlaced(TOUR,mpcLiveKey()))delete TOUR.liveG;} // sospesa valida solo se il suo verbale non è già a referto
     }
   }catch(e){}
   saveTour();
   mpcListenCommon();
-  let duel=null; // sfida diretta lasciata a metà? init presente e verbale assente → si torna in campo
+  let duel=null,duelKey=null; // sfida diretta lasciata a metà? init presente e verbale assente → si torna in campo
   if(room.duel)Object.keys(room.duel).forEach(k=>{
     const d=room.duel[k];
-    if(d&&d.init&&!(room.res&&room.res[k]))duel=d;
+    if(d&&d.init&&!mpcResPlaced(TOUR,k)){duel=d;duelKey=k;}
   });
-  if(duel){mpcDuelRejoin(duel);return;}
+  if(duel){mpcDuelRejoin(duelKey,duel);return;}
   mpcAutoSim();
   currentTourTab='class';renderTour();show('scr-tour');
 }
@@ -4078,11 +4253,12 @@ window.UI={
     try{MPC.ref.child('draft/'+picks.length).transaction(cur=>cur===null?{i,o:MPC.role}:undefined);}catch(e){}
   },
   mpcKeep(w){ // auto-incrocio: scelta di quale squadra guidare (l'altra la gioca l'IA)
-    if(!MPC||MPC.keepFor==null)return;
-    const mi=MPC.keepFor, mt=TOUR.schedule[mi];
-    TOUR.keep['m'+mi]=(w===0)?mt.h:mt.a;saveTour();
+    if(!MPC||!MPC.keepFor)return;
+    const kf=MPC.keepFor;
+    TOUR.keep[mpcKey(kf.tk,kf.x)]=(w===0)?kf.hIdx:kf.aIdx;saveTour();
     $('mpc-keep-modal').style.display='none';MPC.keepFor=null;
-    mpcPlay(mi);
+    const tk=mpcTasks(TOUR,MPC.role); // ricalcolata fresca: nel frattempo può essere arrivato altro
+    if(tk&&tk.phase===kf.tk.phase&&tk.mine.includes(kf.x))mpcPlay(tk,kf.x);else renderTour();
   },
   mpcCancel(){ // dal draft APPENA CREATO: coppa annullata (come chiudere la sala d'attesa 1v1). Da un rientro: si esce e basta, biglietto in tasca
     if(MPC&&MPC.fresh&&!MPC.started){try{MPC.ref.child('quit').set(MPC.role);MPC.ref.update({touched:1});}catch(e){}mpcLeave(false);}
@@ -4236,7 +4412,8 @@ window.UI={
           const meIsHome=hIdx===TOUR.user;
           const A=meIsHome?home:away, B=meIsHome?away:home;
           G=newMatch(A,B);G.teamA=A;G.teamB=B;derbyMood(G,A,B);
-          G.tour={ko:true,tie:t,leg,meIsHome,mustDecide,prior:meIsHome?prior:-prior};
+          const ti=TOUR.ko.rounds[TOUR.ko.stage].ties.indexOf(t); // INDICE, non solo riferimento: la partita congelata passa per JSON e il riferimento si stacca (bug scovato 2026-08-02)
+          G.tour={ko:true,tie:t,ti,leg,meIsHome,mustDecide,prior:meIsHome?prior:-prior};
           applyKits(A,B);beginHalf(1);return;
         }
         const g=simMatchX(TOUR.teams[hIdx],TOUR.teams[aIdx],mustDecide,prior);
@@ -4322,6 +4499,10 @@ window.UI={
     });
   },
   tourFinish(){ // torneo concluso: chiudi e torna alla scelta della competizione
+    if(TOUR&&TOUR.mp){ // coppa multiplayer: trofeo già nello Storico, la stanza si spegne per tutti e due
+      askConfirm(T.q_mpc_finish,()=>{ if(MPC){try{MPC.ref.update({touched:1});}catch(e){}} mpcLeave(false);UI.toMp(); });
+      return;
+    }
     const msg=TOUR.career?T.q_finish_car:T.q_finish_fr;
     askConfirm(msg,()=>{ TOUR=null;saveTour();UI.toTourPick(); });
   },
@@ -4507,7 +4688,7 @@ $('scr-match').addEventListener('click',()=>{
 });
 })();
 /* export per test in Node */
-if(typeof module!=='undefined')module.exports={buildDeck,shuffle,captureOptions,newMatch,startHalf,startShootout,playCard,aiChoose,isLastPlay};
+if(typeof module!=='undefined')module.exports={buildDeck,shuffle,captureOptions,newMatch,startHalf,startShootout,playCard,aiChoose,isLastPlay,mulberry32};
 </script>
 </body>
 </html>
