@@ -426,6 +426,12 @@
     <button class="top-back" onclick="UI.mpBack()" data-i18n-title="t_backmenu" title="Torna al menu">◄</button>
     <div class="phead" data-i18n="mp_head">Multiplayer</div>
     <div id="mp-setup">
+      <div id="mp-resume-row" style="display:none; margin-bottom:14px;">
+        <div style="display:flex; gap:10px; align-items:stretch;">
+          <button class="b90 c-orange" id="mp-resume-btn" style="flex:1;" onclick="UI.mpResume()">Riprendi la partita</button>
+          <button class="b90 c-gray" id="mp-resume-x" onclick="UI.mpResumeX()" title="">✕</button>
+        </div>
+      </div>
       <label data-i18n="lbl_era">Epoca</label>
       <select id="mp-era"></select>
       <label data-i18n="lbl_yourteam">La tua squadra</label>
@@ -980,7 +986,14 @@ I18N.it={
  mp_err_code:'Scrivi il codice della stanza (es. TORO72).',
  mp_rematch_wait:"Rivincita richiesta: in attesa dell'avversario…",
  mp_opp_quit:"L'avversario ha abbandonato la partita.",
- mp_opp_off:"L'avversario ha perso la connessione. La partita non può continuare.",
+ mp_opp_off:"L'avversario ha perso la connessione",
+ mp_opp_off2:"si riprende appena rientra: puoi aspettare o uscire con ✖",
+ mp_opp_back:"L'avversario è rientrato!",
+ mp_resume:'Riprendi la partita',
+ mp_resume_x:'Lascia perdere questa partita',
+ mp_resuming:'Riprendo la partita',
+ mp_resumed:'Partita ripresa: si continua!',
+ mp_res_gone:'La stanza non esiste più: la partita non può riprendere.',
  mp_opp_wait2:"In attesa che l'avversario inizi il 2° tempo",
  // opzioni e impostazioni
  opt_teams:'Squadre', opt_rules:'Regole', opt_history:'Storico Coppe',
@@ -1049,6 +1062,8 @@ I18N.it={
  no_scorers:'Nessun marcatore',
  res_win:'Vittoria {0}!', res_pts3:' (3 punti)', res_draw:'Pareggio', res_pts1:' (1 punto a testa)', res_pens:'{0} passa ai rigori!', dcr:'dcr',
  q_quit:"Vuoi annullare l'incontro?\nIl risultato attuale andrà perso.",
+ q_suspend:"Vuoi sospendere la partita?\nRiprenderai esattamente da qui, con le stesse carte.",
+ log_resume:'Partita ripresa',
  // salvataggi
  msg_export:'Salvataggio esportato!\nIl file è nella cartella Download: conservalo dove vuoi (Drive, chiavetta...). Per ripristinare tutto, anche su un altro computer, usa "Importa".',
  msg_bad:'File non valido: non sembra un salvataggio di MatchSweep!.',
@@ -1062,7 +1077,7 @@ I18N.it={
  btn_createcup:'Crea coppa', myCup:'La mia Coppa', myCareer:'La mia carriera', default_tour:'Torneo', default_career:'Carriera',
  ts_note:'La coppa è girone all\'italiana + fase finale a eliminazione. La preconfigurata (Euro Cup) assegna il trofeo, che finisce nello <b>Storico Coppe</b> (pulsante qui sopra), e si salva da sola (esci e riprendi quando vuoi). Le coppe inventate sono amichevoli: nessun trofeo. Le partite senza di te le gioca l\'IA.',
  tab_class:'Classifica', tab_brk:'Tabellone', tab_marc:'Marcatori', tab_ris:'Risultati',
- btn_next:'Prosegui', btn_newcomp:'Nuova competizione', btn_abandon:'Annulla',
+ btn_next:'Prosegui', btn_resume_susp:'Riprendi la partita sospesa', btn_newcomp:'Nuova competizione', btn_abandon:'Annulla',
  sel_all:'Seleziona tutte',
  msg_preset:'✔ Competizione ufficiale di CARRIERA caricata (epoca modificabile): vale per bacheca e albo d\'oro. Scegli la tua squadra e premi "Crea coppa".',
  warn_2:'⚠ Servono almeno 2 squadre.', warn_q:'⚠ Con la fase finale a {0} servono almeno {0} squadre.',
@@ -1160,7 +1175,14 @@ I18N.en={
  mp_err_code:'Type the room code (e.g. TORO72).',
  mp_rematch_wait:'Rematch requested: waiting for your opponent…',
  mp_opp_quit:'Your opponent has left the match.',
- mp_opp_off:'Your opponent lost the connection. The match cannot continue.',
+ mp_opp_off:'Your opponent lost the connection',
+ mp_opp_off2:'the match resumes when they return: wait, or leave with ✖',
+ mp_opp_back:'Your opponent is back!',
+ mp_resume:'Resume the match',
+ mp_resume_x:'Forget this match',
+ mp_resuming:'Resuming the match',
+ mp_resumed:'Match resumed: play on!',
+ mp_res_gone:'The room no longer exists: the match cannot be resumed.',
  mp_opp_wait2:'Waiting for your opponent to start the 2nd half',
  // options & settings
  opt_teams:'Teams', opt_rules:'Rules', opt_history:'Cup History',
@@ -1229,6 +1251,8 @@ I18N.en={
  no_scorers:'No scorers',
  res_win:'{0} win!', res_pts3:' (3 points)', res_draw:'Draw', res_pts1:' (1 point each)', res_pens:'{0} go through on penalties!', dcr:'pens',
  q_quit:'Abandon this match?\nThe current score will be lost.',
+ q_suspend:'Suspend this match?\nYou will resume exactly from here, with the same cards.',
+ log_resume:'Match resumed',
  // saves
  msg_export:'Backup exported!\nThe file is in your Downloads folder: keep it wherever you like (Drive, USB stick...). To restore everything, even on another computer, use "Import".',
  msg_bad:'Invalid file: it does not look like a MatchSweep! backup.',
@@ -1242,7 +1266,7 @@ I18N.en={
  btn_createcup:'Create cup', myCup:'My Cup', myCareer:'My career', default_tour:'Tournament', default_career:'Career',
  ts_note:'The cup is a round-robin group plus a knockout stage. The preset (Euro Cup) awards the trophy, which goes into <b>Cup History</b> (button above), and saves itself (leave and resume anytime). Cups you invent are friendlies: no trophy. Matches without you are played by the AI.',
  tab_class:'Table', tab_brk:'Bracket', tab_marc:'Scorers', tab_ris:'Results',
- btn_next:'Continue', btn_newcomp:'New competition', btn_abandon:'Abandon',
+ btn_next:'Continue', btn_resume_susp:'Resume the suspended match', btn_newcomp:'New competition', btn_abandon:'Abandon',
  sel_all:'Select all',
  msg_preset:'✔ Official CAREER competition loaded (era editable): counts for cabinets and history. Pick your team and press "Create cup".',
  warn_2:'⚠ At least 2 teams are needed.', warn_q:'⚠ A knockout stage of {0} needs at least {0} teams.',
@@ -1999,6 +2023,7 @@ function renderTour(){
   $('tour-results').innerHTML=ris;
   // a torneo finito: via "Prosegui" e "Annulla", compare "Nuova competizione"
   $('tour-play').style.display=done?'none':'';
+  $('tour-play').textContent=TOUR.liveG?T.btn_resume_susp:T.btn_next; // partita congelata: il pulsante lo dice chiaro (nota UI sessione 2)
   $('tour-abandon').style.display=done?'none':'';
   $('tour-sim').style.display=done?'none':'';
   $('tour-new').style.display=done?'':'none';
@@ -2176,6 +2201,7 @@ async function doPlay(side,handIdx,optIdx){
   if(G.mp&&side==='me')mpSendMove(handIdx,optIdx); // multiplayer: la mia mossa parte subito verso la stanza
   if(side==='ai')await revealAiCard(G.hands.ai[handIdx]);
   const r=playCard(G,side,handIdx,optIdx);
+  liveSave(); // partita congelata: ogni mossa in cassaforte (solo carriera/coppa)
   renderAll(r.laid);
   logMove(r);
   if(r.newRound)addLog(`<span class="evt">${T.log_newround}</span>`);
@@ -2307,6 +2333,7 @@ function endHalf(){
       if(!G.extraPlayed){G.extraPlayed=true;beginHalf(G.half+1);return;} // 1 tempo supplementare
       beginShootout();return;                                            // poi calci di rigore
     }
+    G.fin=true;liveSave(); // il risultato è in cassaforte: chiudere il browser sul tabellino non lo cancella più
     $('fin-teams').textContent=`${G.names.me} vs ${G.names.ai}`;
     $('fin-score').textContent=`${G.score.me} - ${G.score.ai}`+(G.shootResult?` (${G.shootResult.me}-${G.shootResult.ai} ${T.dcr})`:'');
     const noPts=(G.career&&G.career.euro&&G.career.euro!=='group')||(G.tour&&G.tour.ko); // partite secche/eliminazione: niente punti
@@ -2334,6 +2361,7 @@ function beginShootout(){
 }
 async function shootRound(){
   startShootout(G);
+  liveSave();
   pendingStart=null;
   show('scr-match');
   drawSprites();
@@ -2351,6 +2379,7 @@ async function shootRound(){
    "non faceva la differenza" (verdetto dei tester, condiviso). Niente interruttori, niente motore. */
 async function beginHalf(h){
   startHalf(G,h);
+  liveSave(); // anche la smazzata nuova va in cassaforte
   beginHalfUI(h);
 }
 function beginHalfUI(h){ // parte visiva del calcio d'inizio: comune a IA e multiplayer (dove la smazzata arriva dalla stanza)
@@ -2416,6 +2445,12 @@ const RULES=[
    <p>A fine stagione viene assegnato il <b>Pallone d'oro</b>, al giocatore con più punti: <b>i gol segnati in tutte le competizioni</b> (campionato + Euro Cup), <b>più 3 se la sua squadra ha vinto lo scudetto e più 4 se ha vinto la Euro Cup</b>. A parità di punti vince chi ha segnato di più. Uno solo, come nella realtà.</p>
    <h5>Albo d'oro e salvataggio</h5>
    <p>L'<b>albo d'oro</b> è unico e raccoglie tutto: in alto la classifica generale delle squadre con un simbolo per ogni trofeo (scudo = scudetto, coppa = Euro Cup), sotto la storia stagione per stagione — i 4 campioni, la vincitrice della coppa e il Pallone d'oro. La carriera <b>si salva da sola</b>: esci quando vuoi e la ritrovi nell'elenco esattamente dov'era. E da Opzioni → <b>Salvataggi</b> puoi esportare tutto in un file e ripristinarlo quando vuoi, anche su un altro dispositivo.</p>`},
+ {t:'Multiplayer',h:`<h5>La stanza</h5>
+   <p>Dal menu <b>Multiplayer</b> si gioca in due, ognuno dal proprio dispositivo: serve solo la connessione a internet. Uno sceglie la squadra e <b>crea la stanza</b>: ottiene un codice (es. TORO72) e lo detta all'amico, che lo scrive ed <b>entra</b>. La partita comincia da sola appena l'ospite arriva; chi ha creato la stanza deve restare in attesa su quella schermata. Le regole sono quelle dell'amichevole e ognuno vede solo la propria mano.</p>
+   <h5>La rivincita</h5>
+   <p>A fine partita il pulsante <b>Rigioca</b> chiede la rivincita nella stessa stanza: quando entrambi lo premono si riparte, stesse squadre, nuova monetina e nuovo mazzo.</p>
+   <h5>Se cade la connessione</h5>
+   <p>Nessuna partita persa: chi resta in campo vede l'avviso e <b>aspetta senza fretta</b> (o esce con ✖); chi è caduto torna nel menu Multiplayer e trova <b>"Riprendi la partita"</b> — si rientra esattamente dov'era, stesse carte e stesso punteggio. Vale anche se la pagina si chiude per sbaglio.</p>`},
  {t:'Spareggi',h:`<h5>In campionato e nei gironi</h5>
    <p>Il pareggio è un risultato valido (1 punto a testa). A pari punti in classifica decidono <b>la differenza reti e poi i gol fatti</b>, come nella realtà: nessuno spareggio.</p>
    <h5>Supplementari</h5>
@@ -2464,6 +2499,12 @@ I18N.en.rules=[
    <p>At the end of the season the <b>Golden Ball</b> goes to the player with the most points: <b>goals scored in all competitions</b> (league + Euro Cup), <b>plus 3 if his team won the league and plus 4 if it won the Euro Cup</b>. If tied, the player with more goals wins. One winner only, like in real life.</p>
    <h5>Hall of fame and saving</h5>
    <p>The <b>hall of fame</b> is shared and collects everything: at the top the all-time table of teams with one symbol per trophy (shield = league title, cup = Euro Cup), below the season-by-season history — the 4 champions, the cup winner and the Golden Ball. The career <b>saves itself</b>: leave whenever you want and you'll find it in the list exactly where it was. And from Options → <b>Saves</b> you can export everything to a file and restore it anytime, even on another device.</p>`},
+ {t:'Multiplayer',h:`<h5>The room</h5>
+   <p>From the <b>Multiplayer</b> menu two people play, each on their own device: all you need is an internet connection. One picks a team and <b>creates the room</b>: they get a code (e.g. TORO72) and share it with the friend, who types it in and <b>joins</b>. The match starts by itself as soon as the guest arrives; the room creator must stay waiting on that screen. The rules are the friendly-match rules, and each player only sees their own hand.</p>
+   <h5>The rematch</h5>
+   <p>At full time the <b>Rematch</b> button asks for a rematch in the same room: when both press it, play restarts — same teams, new coin toss, fresh deck.</p>
+   <h5>If the connection drops</h5>
+   <p>No match is ever lost: the player still on the pitch sees a notice and <b>waits, no rush</b> (or leaves with ✖); the one who dropped goes back to the Multiplayer menu and finds <b>"Resume the match"</b> — back exactly where it was, same cards, same score. It also works if the page gets closed by mistake.</p>`},
  {t:'Tie-breaks',h:`<h5>In leagues and groups</h5>
    <p>A draw is a valid result (1 point each). If teams finish level on points, <b>goal difference and then goals scored</b> decide, like in real life: no play-off.</p>
    <h5>Extra time</h5>
@@ -2893,6 +2934,7 @@ function renderCareerHub(){
   const pb=$('career-play');pb.style.display='';
   const finished=euroOn?E.done:done;
   pb.textContent=euroOn?(E.done?T.btn_close_season:(euroUserSlot()>=0?fmt(T.btn_play_euro,euroDayLabel(E.day)):fmt(T.btn_proceed_euro,euroDayLabel(E.day)))):(done?T.btn_close_leagues:fmt(T.btn_play_day,day));
+  if(c.liveG)pb.textContent=T.btn_resume_susp; // partita congelata: il pulsante lo dice chiaro (nota UI sessione 2)
   $('career-sim').style.display=finished?'none':''; // Simula: funzione permanente (deciso 2026-07-15), discreta accanto a Gioca
 }
 
@@ -2920,7 +2962,40 @@ function tourCompleteKoLeg(leg){ // idem in fase KO: si completa la stessa "mano
     tourAddScorers(g,TOUR.teams[hIdx],TOUR.teams[aIdx]);
   });
 }
+/* ===== PARTITA CONGELATA (anti-rigioco, deciso 2026-07-31) =====
+   In carriera e coppa ogni mossa viene salvata DENTRO il salvataggio: uscire, ricaricare o
+   chiudere il browser NON annulla più l'incontro — si riprende ESATTAMENTE da dov'era, con
+   le stesse carte. Se la partita era già finita (tabellino), al rientro si registra da sola.
+   Motivo: il "rigioco finché vinco" (Esci/ricarica quando si perde) regalava carriere
+   immacolate — scoperto col collaudo tra amici (8 scudetti su 8, tutti a tavolino...). */
+function liveSave(){
+  if(!G||G.mp)return;
+  if(G.career&&CAREER){CAREER.liveG=JSON.parse(JSON.stringify(G));CAREER.saved=Date.now();CAREERS[CAREER.name]=CAREER;saveCareers();}
+  else if(G.tour&&TOUR){TOUR.liveG=JSON.parse(JSON.stringify(G));saveTour();}
+}
+function liveRestore(g){ // rimette in campo la partita sospesa; se era finita la registra e basta (→ false)
+  G=g;
+  if(G.fin){ // chiusa sul tabellino senza premere nulla: il risultato non si perde mai
+    if(G.career)careerRecordMatch();else if(G.tour)tourRecordMatch();
+    G=null;return false;
+  }
+  applyKits(G.teamA,G.teamB); // ripristina anche le maglie (variabili CSS) dopo un ricaricamento
+  if(G.hands.me.length===0&&G.hands.ai.length===0&&G.deck.length===0){endHalf();return true;} // era a un cambio tempo/serie: endHalf rimette la schermata giusta
+  show('scr-match');
+  drawSprites();
+  renderAll();
+  logLines=[];
+  addLog(T.log_resume);
+  showFieldNote(T.log_resume,'');
+  pendingStart=null;
+  if(G.turn==='ai'){
+    busy=true; // come al calcio d'inizio: l'IA muove al primo tocco del campo
+    pendingStart=async()=>{await sleep(400);const ch=aiChoose(G,'ai');await doPlay('ai',ch.handIdx,ch.optIdx);};
+  }else busy=false;
+  return true;
+}
 function tourRecordMatch(){
+  if(TOUR)delete TOUR.liveG; // partita registrata = niente più sospesa (il saveTour a valle persiste)
   if(G.tour.ko){
     const t=G.tour.tie;
     const L=G.tour.leg===1?t.l1:t.l2;
@@ -2946,6 +3021,7 @@ function tourRecordMatch(){
   saveTour();
 }
 function careerRecordMatch(){
+  if(CAREER)delete CAREER.liveG; // partita registrata = niente più sospesa (il saveCareers a valle persiste)
   if(G.career&&G.career.euro){ // partita EURO CUP: registra e avanza il calendario Euro
     const E=CAREER.euro, k=G.career, meG=G.score.me, aiG=G.score.ai;
     if(k.euro==='group'){
@@ -2999,9 +3075,11 @@ async function fbInit(){
   if(fbDb)return fbDb;
   if(typeof firebase==='undefined'){
     await fbScript('https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js');
+    await fbScript('https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js');
     await fbScript('https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js');
   }
   if(!firebase.apps.length)firebase.initializeApp(FB_CONFIG);
+  if(!firebase.auth().currentUser)await firebase.auth().signInAnonymously(); // login anonimo: le regole del DB accettano solo i client del gioco (blindatura sessione 2)
   fbDb=firebase.database();
   return fbDb;
 }
@@ -3062,9 +3140,10 @@ function mpCleanup(removeRoom){ // chiude ascolti e presenza; l'host può anche 
   if(removeRoom){const r=MP.ref;setTimeout(()=>{try{r.remove();}catch(e){}},8000);} // margine: l'altro deve ricevere gli ultimi eventi
   MP=null;
 }
-function mpAbort(msg){ // l'avversario è sparito o ha abbandonato: si chiude con onore
+function mpAbort(msg){ // l'avversario ha abbandonato: si chiude con onore
   const amHost=MP&&MP.role==='host';
   if(MP)MP.done=true;
+  mpUnmark();
   mpCleanup(amHost);
   busy=false;pendingStart=null;G=null;
   show('scr-menu');
@@ -3096,6 +3175,7 @@ function mpFullTime(){ // triplice fischio: la stanza resta APERTA per la rivinc
 }
 function mpQuit(){ // uscita volontaria dal match: avvisa l'avversario, poi si chiude
   if(MP){try{MP.ref.child('quit').set(MP.role);}catch(e){}}
+  mpUnmark();
   mpCleanup(MP&&MP.role==='host');
   G=null;
   show('scr-menu');
@@ -3129,8 +3209,19 @@ function mpListen(){ // ganci comuni ai due ruoli: inizio partita, mosse, 2a sma
     if(!q||!MP||q===MP.role||MP.done)return;
     mpAbort(T.mp_opp_quit);
   });
-  mpOn(MP.ref.child('presence/'+other),'value',s=>{
-    if(s.val()===false&&MP&&MP.started&&!MP.done)mpAbort(T.mp_opp_off);
+  mpOn(MP.ref.child('presence/'+other),'value',s=>{ // sessione 2: la disconnessione NON chiude più la partita — si aspetta il rientro
+    if(!MP||!MP.started||MP.done)return;
+    if(s.val()===false){
+      MP.oppOff=true;
+      if(G&&G.mp&&!G.fin)showFieldNote(T.mp_opp_off,T.mp_opp_off2);
+    }else if(s.val()===true&&MP.oppOff){
+      MP.oppOff=false;
+      if(G&&G.mp&&!G.fin){
+        showFieldNote(T.mp_opp_back,'');
+        setTimeout(()=>{const k=$('kickoff-note');if(k&&MP&&!MP.oppOff)k.classList.add('hidden');},2200);
+      }
+      mpPump();
+    }
   });
   if(MP.role==='host')mpOn(MP.ref.child('rematch'),'value',s=>{ // rivincita: quando ENTRAMBI hanno premuto Rigioca, l'host rimescola
     const rm=s.val();if(!rm||!MP)return;
@@ -3149,11 +3240,87 @@ function mpRematch(){ // RIVINCITA nella stessa stanza: stesse squadre, nuova mo
   ['btn-rigioca','news-rigioca'].forEach(id=>{const b=$(id);if(b){b.disabled=true;b.style.opacity=.55;}});
   $('fin-esito').textContent=T.mp_rematch_wait;
 }
+/* ===== RIENTRO DOPO DISCONNESSIONE (sessione 2) =====
+   Il biglietto della stanza (codice+ruolo) resta in localStorage finché la partita vive: se cade la
+   linea o si chiude la pagina, dal menu Multiplayer compare "Riprendi la partita". Il rientro
+   ricostruisce TUTTO dal verbale della stanza: init (mazzo+monetina) e mosse numerate, rigiocate
+   in un lampo col motore deterministico — stesse carte, stesso punteggio, stessa carta da giocare.
+   L'avversario nel frattempo NON viene buttato fuori: vede "connessione persa, attendo il rientro"
+   e decide lui se aspettare o uscire (niente timeout: coerente con la filosofia senza-timer). */
+function mpMark(){if(MP)lsSet('soccercard_mp_room',JSON.stringify({code:MP.code,role:MP.role}));}
+function mpUnmark(){try{localStorage.removeItem('soccercard_mp_room');}catch(e){}}
+function mpMarker(){try{const m=JSON.parse(lsGet('soccercard_mp_room')||'null');return (m&&m.code&&m.role)?m:null;}catch(e){return null;}}
+function mpHostGuestHook(ref){ // l'ospite è arrivato: monetina e verbale d'inizio (usato alla creazione E al rientro in sala d'attesa)
+  mpOn(ref.child('guest'),'value',s=>{
+    const g=s.val();
+    if(!g||!g.team||!MP||MP.initSent)return;
+    MP.initSent=true;MP.oppTeam=g.team; // la squadra dell'ospite serve anche per le rivincite
+    try{ref.child('init').set({r:1,starter:Math.random()<.5?'host':'guest',th:MP.myTeam,tg:g.team,deal:mpMakeDeal()});}catch(e){}
+  });
+}
+async function mpRejoinRoom(){
+  const mk=mpMarker();if(!mk)return;
+  mpShowWait(mk.code,T.mp_connecting);
+  let db;try{db=await fbInit();}catch(e){mpShowSetup();askConfirm(T.mp_err_net,()=>{});return;}
+  mpStatus(T.mp_resuming,true);
+  let snap;try{snap=await db.ref('rooms/'+mk.code).once('value');}catch(e){mpShowSetup();askConfirm(T.mp_err_net,()=>{});return;}
+  const room=snap.val();
+  if(!room||!room.created||room.quit){ // stanza sparita o avversario uscito mentre eri via: niente da riprendere
+    mpUnmark();mpShowSetup();
+    askConfirm((room&&room.quit&&room.quit!==mk.role)?T.mp_opp_quit:T.mp_res_gone,()=>{});
+    return;
+  }
+  const ref=db.ref('rooms/'+mk.code), init=room.init||null;
+  const d2=(room.deals&&room.deals['2'])||null;
+  MP={role:mk.role,code:mk.code,ref,myTeam:null,oppTeam:null,round:init?(init.r||1):0,rematchSent:0,
+      applied:0,queue:{},live:false,pumping:false,started:!!init,initSent:!!init,
+      deal2:d2,deal2Sent:!!d2,wait2:false,done:false,oppOff:false,offRefs:[]};
+  if(init){MP.myTeam=(mk.role==='host')?init.th:init.tg;MP.oppTeam=(mk.role==='host')?init.tg:init.th;}
+  else MP.myTeam=(mk.role==='host')?(room.host&&room.host.team):(room.guest&&room.guest.team);
+  ref.child('presence/'+mk.role).set(true);
+  ref.child('presence/'+mk.role).onDisconnect().set(false);
+  mpMark();
+  if(!init){ // partita mai iniziata: si torna in sala d'attesa (il listener init farà il resto)
+    mpShowWait(mk.code,(mk.role==='host')?(T.mp_share+'.<br>'+T.mp_waiting):T.mp_joining);
+    mpListen();
+    if(mk.role==='host')mpHostGuestHook(ref);
+    return;
+  }
+  // RICOSTRUZIONE: il verbale rigiocato in un lampo, senza animazioni (playCard puro)
+  mpBuildG(init);
+  const moves=[];if(room.moves)Object.keys(room.moves).forEach(k=>{moves[+k]=room.moves[k];});
+  let atBreak=false; // fermi all'intervallo o al triplice fischio
+  for(let n=0;n<moves.length;n++){
+    const m=moves[n];if(!m)break;
+    MP.applied=n+1;
+    const side=((m.s==='h')===(mk.role==='host'))?'me':'ai';
+    const r=playCard(G,side,m.h,m.o||0);
+    if(r.endOfHalf){
+      if(G.half===1&&MP.deal2&&moves[n+1]!==undefined)mpApplyDeal(2,MP.deal2); // l'intervallo è già alle spalle
+      else{atBreak=true;break;}
+    }
+  }
+  mpListen(); // da qui in poi: mosse nuove, rivincite, presenza, abbandoni
+  pendingStart=null;
+  if(atBreak){MP.live=false;endHalf();return;} // intervallo (si riparte da "Inizia 2° tempo") o tabellino finale (rivincita possibile)
+  show('scr-match');
+  drawSprites();renderAll();
+  logLines=[];addLog(`<span class="evt">${T.mp_resumed}</span>`);
+  busy=false;MP.live=true;
+  mpPump(); // se l'avversario ha mosso mentre rientravi, la mossa è già in coda
+}
 async function mpCreateRoom(){
   const team=mpTeamSel();
   mpShowWait('—',T.mp_connecting);
   let db;try{db=await fbInit();}catch(e){mpShowSetup();askConfirm(T.mp_err_net,()=>{});return;}
   mpStatus(T.mp_creating,true);
+  // PULIZIA STANZE STANTIE (sessione 2): chi crea una stanza spazza via quelle di ieri.
+  // Una partita vera dura ~15 minuti: dopo 24 ore una stanza è solo spazzatura dimenticata
+  // (browser chiusi male, prove, ecc.). Query sull'indice 'created', al massimo 20 alla volta.
+  try{
+    const old=await db.ref('rooms').orderByChild('created').endAt(Date.now()-86400000).limitToFirst(20).once('value');
+    old.forEach(s=>{try{s.ref.remove();}catch(e){}});
+  }catch(e){}
   let code=null,ref=null;
   try{
     for(let i=0;i<8&&!code;i++){ // codice libero: al massimo qualche tentativo
@@ -3167,15 +3334,11 @@ async function mpCreateRoom(){
   }catch(e){MP=null;mpShowSetup();askConfirm(T.mp_err_net,()=>{});return;}
   ref.child('presence/host').set(true);
   ref.child('presence/host').onDisconnect().set(false);
+  mpMark(); // biglietto in tasca: se cade la linea si rientra con "Riprendi la partita"
   $('mp-code-big').textContent=code;
   mpStatus(T.mp_share+'.<br>'+T.mp_waiting,true);
   mpListen();
-  mpOn(ref.child('guest'),'value',s=>{ // l'ospite è arrivato: monetina e verbale d'inizio
-    const g=s.val();
-    if(!g||!g.team||!MP||MP.initSent)return;
-    MP.initSent=true;MP.oppTeam=g.team; // la squadra dell'ospite serve anche per le rivincite
-    try{ref.child('init').set({r:1,starter:Math.random()<.5?'host':'guest',th:MP.myTeam,tg:g.team,deal:mpMakeDeal()});}catch(e){}
-  });
+  mpHostGuestHook(ref);
 }
 async function mpJoinRoom(){
   const raw=($('mp-code').value||'').toUpperCase().replace(/[^A-Z0-9]/g,''); // spazi e trattini ignorati: il codice è solo lettere+numeri
@@ -3194,6 +3357,7 @@ async function mpJoinRoom(){
     MP={role:'guest',code:raw,ref,myTeam:team,oppTeam:null,round:0,rematchSent:0,applied:0,queue:{},live:false,pumping:false,started:false,initSent:false,deal2:null,deal2Sent:false,wait2:false,done:false,offRefs:[]};
     ref.child('presence/guest').set(true);
     ref.child('presence/guest').onDisconnect().set(false);
+    mpMark(); // biglietto in tasca: se cade la linea si rientra con "Riprendi la partita"
     mpStatus(T.mp_joining,true);
     mpListen();
   }catch(e){MP=null;mpShowSetup();askConfirm(T.mp_err_net,()=>{});}
@@ -3207,8 +3371,9 @@ window.UI={
     startFriendly(mkTeam(i,era),mkTeam(j,eraAi));
   },
   secondHalf(){if(G&&G.mp){mpSecondHalf();return;}beginHalf(2);},
-  quitMatch(){ // esci dal match in corso: l'incontro viene annullato (non registrato)
-    askConfirm(T.q_quit,()=>{
+  quitMatch(){ // esci dal match: in carriera/coppa la partita si SOSPENDE (congelata, si riprende); altrove si annulla
+    const susp=!!(G&&(G.career||G.tour)&&!G.mp);
+    askConfirm(susp?T.q_suspend:T.q_quit,()=>{
       busy=false;pendingStart=null;
       if(G&&G.mp){mpQuit();return;} // multiplayer: avvisa l'avversario e chiude la stanza
       const inTour=!!(G&&G.tour), inCareer=!!(G&&G.career);
@@ -3228,18 +3393,25 @@ window.UI={
     fillEraSelect($('mp-era'),false); // sempre ricostruiti: le etichette seguono la lingua
     fillGrouped($('mp-team'),0);
     $('mp-code').value='';
+    const mk=mpMarker(); // partita interrotta? il biglietto in tasca fa comparire "Riprendi"
+    $('mp-resume-row').style.display=mk?'':'none';
+    if(mk){$('mp-resume-btn').textContent=T.mp_resume+' · '+mk.code;$('mp-resume-x').title=T.mp_resume_x;}
     mpShowSetup();
     show('scr-mp');
   },
   mpCreate(){mpCreateRoom();},
   mpJoin(){mpJoinRoom();},
+  mpResume(){mpRejoinRoom();},
+  mpResumeX(){mpUnmark();$('mp-resume-row').style.display='none';}, // lascia perdere: via il biglietto
   mpCancel(){ // dalla sala d'attesa: si torna alla scelta squadra
     if(MP&&MP.role==='guest'){try{MP.ref.child('guest').remove();MP.ref.child('presence/guest').remove();}catch(e){}}
+    mpUnmark();
     mpCleanup(MP&&MP.role==='host');
     mpShowSetup();
   },
   mpBack(){ // ◄: esci dal multiplayer (chiude l'eventuale stanza aperta)
     if(MP&&MP.role==='guest'){try{MP.ref.child('guest').remove();MP.ref.child('presence/guest').remove();}catch(e){}}
+    mpUnmark();
     mpCleanup(MP&&MP.role==='host');
     show('scr-menu');
   },
@@ -3313,6 +3485,7 @@ window.UI={
   toCoppa(){ // tessera Coppa: riprende la coppa in corso, altrimenti setup nuova. FIX LOOP (2026-07-28):
     // il pulsante del menu ora apre SEMPRE la scelta competizione — prima, con una coppa attiva,
     // saltava dritto alla coppa e Stagione/Storico diventavano irraggiungibili.
+    if(TOUR&&TOUR.liveG&&TOUR.liveG.fin)liveRestore(TOUR.liveG); // tabellino chiuso a forza: registra subito il risultato
     if(TOUR){currentTourTab='class';renderTour();show('scr-tour');}
     else UI.toTourSetup();
   },
@@ -3358,6 +3531,7 @@ window.UI={
   },
   tourNext(){
     // processa in ordine: girone, poi eventuale fase finale; simula le partite IA, si ferma quando tocca a te
+    if(TOUR.liveG){if(liveRestore(TOUR.liveG))return;renderTour();return;} // prima si finisce la partita sospesa
     while(true){
       if(TOUR.type==='cup'&&TOUR.phase==='ko'){
         koAdvance();
@@ -3408,6 +3582,7 @@ window.UI={
     askConfirm(T.q_exit_cup,()=>show('scr-menu'));
   },
   tourSim(){ // ⏩ come in carriera: l'IA gioca anche la TUA prossima partita (una per click), il resto scorre da solo
+    if(TOUR.liveG){if(liveRestore(TOUR.liveG))return;renderTour();return;} // niente scorciatoie: la sospesa si finisce, non si simula
     while(true){
       if(TOUR.type==='cup'&&TOUR.phase==='ko'){
         koAdvance();
@@ -3555,7 +3730,9 @@ window.UI={
     CAREERS[name]=CAREER;saveCareers();
     careerTab=null;renderCareerHub();show('scr-career');
   },
-  careerResume(n){CAREER=CAREERS[n];if(!CAREER)return;careerTab=null;renderCareerHub();show('scr-career');},
+  careerResume(n){CAREER=CAREERS[n];if(!CAREER)return;careerTab=null;
+    if(CAREER.liveG&&liveRestore(CAREER.liveG))return; // partita sospesa: si riprende da lì (se era finita, si è appena registrata)
+    renderCareerHub();show('scr-career');},
   careerDelete(n){askConfirm(fmt(T.q_del,n),()=>{delete CAREERS[n];saveCareers();renderCareerList();});},
   careerSaveExit(){
     askConfirm(T.q_exit,()=>{
@@ -3564,6 +3741,7 @@ window.UI={
     });
   },
   careerPlay(){
+    if(CAREER.liveG){if(liveRestore(CAREER.liveG))return;renderCareerHub();return;} // prima si finisce la partita sospesa
     if(CAREER.euroPhase){ // fase Euro SuperCup
       const E=CAREER.euro;
       if(E.done){askConfirm(fmt(T.q_close_season,CAREER.season),()=>careerNewSeason());return;}
@@ -3586,6 +3764,7 @@ window.UI={
     applyKits(A,B);beginHalf(1);
   },
   careerSim(){ // l'IA gioca anche la TUA partita: giornata istantanea (stile manager)
+    if(CAREER.liveG){if(liveRestore(CAREER.liveG))return;renderCareerHub();return;} // niente scorciatoie: la partita sospesa si finisce, non si simula
     if(CAREER.euroPhase){
       const E=CAREER.euro;
       if(!E.done){euroPlayDay(true);CAREER.saved=Date.now();CAREERS[CAREER.name]=CAREER;saveCareers();renderCareerHub();}
