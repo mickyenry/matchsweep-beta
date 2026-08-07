@@ -1106,7 +1106,11 @@ function aiChoose(G,side){
       let score;
       if(card.v===1&&table.length>0&&table.every(c=>c.v===1))score=1001; // GOL DEL PORTIERE: asso su tavolo di soli assi
       else if(clears&&card.v!==1)score=1000+card.v;             // scopa = gol
-      else if(card.v===1)score=40+opt.length*15;                // asso: usalo solo se raccoglie tanto
+      else if(card.v===1){ // GESTIONE DELL'ASSIST (2026-08-03, tattica di Enrico: tienilo per l'ULTIMA MANO e giocalo presto — 3 carte per aprire, 2 per punire)
+        score=40+opt.length*15;                                     // base: usalo dove raccoglie tanto
+        if(hand.length>1)score+=8+4*f.att;                          // dopo l'asso l'avversario POSA su tavolo vuoto: chi ha ATTACCO vede il colpo (att5 +28, att1 +12)
+        if(G.deck.length===0&&table.length>=1)score+=50+10*f.vis;   // ultima mano: l'assist va SPESO, non morire in mano — la LUCIDITÀ sente l'urgenza (vis5 +100)
+      }
       else score=100+opt.length*12+card.v;                      // presa normale
       if(score<1000){ // il tavolo RESIDUO dopo la presa: se somma R e le carte R girano ancora, sto servendo la scopa all'avversario
         const R=table.reduce((a,c,i)=>a+(opt.includes(i)?0:c.v),0);
