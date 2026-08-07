@@ -579,12 +579,8 @@
   <div class="panel90" style="max-width:600px;">
     <button class="top-back" onclick="UI.toMpPick()" data-i18n-title="t_back" title="Indietro">◄</button>
     <div class="phead" data-i18n="mpc_head">🏆 Coppa multiplayer</div>
-    <div id="mpc-resume-row" style="display:none; margin-bottom:14px;">
-      <div style="display:flex; gap:10px; align-items:stretch;">
-        <button class="b90 c-orange" id="mpc-resume-btn" style="flex:1;" onclick="UI.mpcResume()">Riprendi la coppa</button>
-        <button id="mpc-resume-x" style="align-self:center;" onclick="UI.mpcResumeX()" title="">X</button>
-      </div>
-    </div>
+    <!-- le coppe in corso: una riga per biglietto (multi-coppa, stile lista carriere) -->
+    <div id="mpc-resume-list" style="margin-bottom:6px;"></div>
     <label data-i18n="mpc_lbl_pname">Il tuo nome (per l'albo d'oro, facoltativo)</label>
     <input type="text" id="mpc-pname" maxlength="14" autocomplete="off">
     <label data-i18n="mpc_havecode">Hai un codice? Entra nella coppa dell'amico</label>
@@ -2079,7 +2075,7 @@ function genCalendar(n,double){
 var TOUR=null;
 try{const s=localStorage.getItem('soccercard_tour_v1');if(s)TOUR=JSON.parse(s);}catch(e){}
 function saveTour(){try{
-  if(TOUR&&TOUR.mp){localStorage.setItem('soccercard_mpc_tour',JSON.stringify(TOUR));return;} // la coppa multiplayer ha il suo cassetto: NON tocca la coppa in solitaria
+  if(TOUR&&TOUR.mp){localStorage.setItem('soccercard_mpc_tour_'+TOUR.mp.code,JSON.stringify(TOUR));return;} // ogni coppa multiplayer ha il SUO cassetto (multi-coppa): mai la coppa in solitaria
   if(TOUR)localStorage.setItem('soccercard_tour_v1',JSON.stringify(TOUR));else localStorage.removeItem('soccercard_tour_v1');
 }catch(e){}}
 function soloTour(){ // la coppa in solitaria, anche mentre TOUR ospita quella multiplayer (per export e rientro)
@@ -3678,7 +3674,8 @@ async function mpRejoinRoom(){
   const d2=(room.deals&&room.deals['2'])||null;
   if(!init){ // partita mai iniziata: se sono l'HOST torno in SALA D'ATTESA (giro WhatsApp da telefono, fix 2026-08-03)
     if(mk.role==='host'&&room.host&&room.host.team&&!room.quit){
-      if(room.presence&&room.presence.host===true){mpShowSetup();askConfirm(T.mp_err_full,()=>{});return;} // sedia già occupata (finestra gemella)
+      const sureW=!!(room.cid&&mk.cid&&room.cid.h===mk.cid); // la sedia è FIRMATA mia: la presenza "fantasma" del vecchio collegamento non conta
+      if(!sureW&&room.presence&&room.presence.host===true){mpShowSetup();askConfirm(T.mp_err_full,()=>{});return;} // occupata da un altro (finestra gemella)
       MP={role:'host',code:mk.code,ref,cid:mk.cid,myTeam:room.host.team,oppTeam:null,round:0,rematchSent:0,
           applied:0,queue:{},live:false,pumping:false,started:false,initSent:false,deal2:null,deal2Sent:false,wait2:false,done:false,oppOff:false,offRefs:[]};
       ref.child('presence/host').set(true);
@@ -3695,7 +3692,8 @@ async function mpRejoinRoom(){
   let role=mk.role;
   const cids=room.cid||{};
   if(mk.cid){if(cids.h===mk.cid)role='host';else if(cids.g===mk.cid)role='guest';}
-  if(room.presence&&room.presence[role]===true){mpShowSetup();askConfirm(T.mp_err_full,()=>{});return;}
+  const sure=!!(mk.cid&&(cids.h===mk.cid||cids.g===mk.cid)); // sedia firmata mia: il "fantasma" del vecchio collegamento non blocca (rientro veloce da WhatsApp)
+  if(!sure&&room.presence&&room.presence[role]===true){mpShowSetup();askConfirm(T.mp_err_full,()=>{});return;}
   MP={role,code:mk.code,ref,cid:mk.cid,myTeam:null,oppTeam:null,round:init.r||1,rematchSent:0,
       applied:0,queue:{},live:false,pumping:false,started:true,initSent:true,
       deal2:d2,deal2Sent:!!d2,wait2:false,done:false,oppOff:false,offRefs:[]};
@@ -3753,6 +3751,7 @@ async function mpCreateRoom(){
   ref.child('presence/host').onDisconnect().set(false);
   mpMark(); // biglietto GIÀ in sala d'attesa (fix 2026-08-03): da telefono si va su WhatsApp a dettare il codice
   // e il sistema può ricaricare la pagina — al ritorno "Riprendi" rimette in sala (o in partita, se l'amico è entrato)
+  ref.child('cid/h').set(MP.cid); // firma della sedia subito: al rientro veloce la "presenza fantasma" del vecchio collegamento non deve bloccarmi
   $('mp-code-big').textContent=code;
   mpStatus(T.mp_share+'.<br>'+T.mp_waiting,true);
   mpListen();
@@ -3822,9 +3821,28 @@ var MPC=null; // stanza-coppa: {role:'h'|'g', code, ref, cid, offRefs, cfg, pick
 function mpcOn(ref,ev,cb){ref.on(ev,cb);MPC.offRefs.push([ref,ev,cb]);}
 function mpcDetach(){if(MPC&&MPC.offRefs){MPC.offRefs.forEach(a=>{try{a[0].off(a[1],a[2]);}catch(e){}});MPC.offRefs=[];}}
 function mpcTouch(){try{MPC.ref.update({touched:firebase.database.ServerValue.TIMESTAMP});}catch(e){}} // coppa "viva": non la spazza la pulizia dei 30 giorni
-function mpcMark(){if(!MPC)return;lsSet('soccercard_mpc_room',JSON.stringify({code:MPC.code,role:MPC.role,cid:MPC.cid}));}
-function mpcUnmark(){try{localStorage.removeItem('soccercard_mpc_room');}catch(e){}}
-function mpcMarker(){try{const m=JSON.parse(lsGet('soccercard_mpc_room')||'null');return (m&&m.code&&m.role)?m:null;}catch(e){return null;}}
+/* PORTAFOGLIO MULTI-COPPA (2026-08-03, dal testing di Enrico: una coppa in corso E una nuova insieme):
+   i biglietti sono una LISTA [{code,role,cid,name,ts}] e ogni coppa ha il suo specchio locale
+   soccercard_mpc_tour_CODICE. La schermata Coppa mostra una riga "Riprendi" per ciascuna. */
+function mpcTickets(){
+  try{
+    let l=JSON.parse(lsGet('soccercard_mpc_rooms')||'null')||[];
+    const old=JSON.parse(lsGet('soccercard_mpc_room')||'null'); // migrazione dal biglietto singolo
+    if(old&&old.code){if(!l.some(t=>t.code===old.code))l.push(old);try{localStorage.removeItem('soccercard_mpc_room');}catch(e){}lsSet('soccercard_mpc_rooms',JSON.stringify(l));}
+    return l.filter(t=>t&&t.code&&t.role);
+  }catch(e){return [];}
+}
+function mpcMark(){
+  if(!MPC)return;
+  const l=mpcTickets().filter(t=>t.code!==MPC.code);
+  l.push({code:MPC.code,role:MPC.role,cid:MPC.cid,name:(MPC.cfg&&MPC.cfg.name)||'',ts:Date.now()});
+  lsSet('soccercard_mpc_rooms',JSON.stringify(l));
+}
+function mpcUnmark(code){ // via il biglietto e lo specchio di QUELLA coppa (le altre restano in tasca)
+  if(!code)return;
+  lsSet('soccercard_mpc_rooms',JSON.stringify(mpcTickets().filter(t=>t.code!==code)));
+  try{localStorage.removeItem('soccercard_mpc_tour_'+code);}catch(e){}
+}
 function mpcStatus(msg,dots){const el=$('mpc-status');if(el)el.innerHTML=msg?msg+(dots?'<span class="dots"></span>':''):'';}
 async function shareCode(code){ // 📤 il codice va su WhatsApp senza copiature a mano (fix del giro-WhatsApp da telefono, 2026-08-03)
   const txt=fmt(T.share_txt,code)+' '+location.href;
@@ -4346,13 +4364,14 @@ function mpcDuelRejoin(key,d){ // rientro a sfida in corso: init + mosse rigioca
 }
 /* ----- uscite, abbandoni, rientro ----- */
 function mpcLeave(keepTicket){ // giù tutti i ganci; col biglietto in tasca la coppa si riprende da Multiplayer
+  const code=MPC?MPC.code:((TOUR&&TOUR.mp)?TOUR.mp.code:null);
   if(MP&&MP.duel){mpDetach();MP=null;}
   if(MPC){
     mpcDetach();
     try{MPC.ref.child('presence/'+MPC.role).onDisconnect().cancel();MPC.ref.child('presence/'+MPC.role).set(false);}catch(e){}
     MPC=null;
   }
-  if(!keepTicket){mpcUnmark();try{localStorage.removeItem('soccercard_mpc_tour');}catch(e){}}
+  if(!keepTicket)mpcUnmark(code); // via SOLO il biglietto di questa coppa (le altre restano in tasca)
   TOUR=soloTour(); // la coppa in solitaria torna al suo posto
 }
 function mpcExit(){mpcLeave(true);show('scr-menu');} // ◄ dall'hub: la coppa resta sul cloud e in tasca
@@ -4369,8 +4388,8 @@ function mpcOppQuit(){ // l'amico ha abbandonato la coppa: si chiude tutto, anch
   show('scr-menu');
   askConfirm(T.mpc_opp_quit,()=>{});
 }
-async function mpcResumeCup(){ // dal biglietto: si ricostruisce TUTTO dal cloud (cfg + draft + risultati [+ sfida in corso])
-  const mk=mpcMarker();if(!mk)return;
+async function mpcResumeCup(code){ // dal biglietto SCELTO: si ricostruisce TUTTO dal cloud (cfg + draft + risultati [+ sfida in corso])
+  const mk=mpcTickets().find(t=>t.code===code);if(!mk)return;
   show('scr-mpc-draft');
   $('mpc-draft-head').textContent='🏆';$('mpc-code-big').textContent=mk.code;$('mpc-draft-list').innerHTML='';$('mpc-turn').textContent='';
   mpcStatus(T.mp_connecting,true);
@@ -4379,13 +4398,14 @@ async function mpcResumeCup(){ // dal biglietto: si ricostruisce TUTTO dal cloud
   let snap;try{snap=await db.ref('cups/'+mk.code).once('value');}catch(e){UI.toMpcSetup();askConfirm(T.mp_err_net,()=>{});return;}
   const room=snap.val();
   if(!room||!room.cfg||room.quit){
-    mpcUnmark();try{localStorage.removeItem('soccercard_mpc_tour');}catch(e){}
+    mpcUnmark(mk.code);
     UI.toMpcSetup();askConfirm((room&&room.quit&&room.quit!==mk.role)?T.mpc_opp_quit:T.mpc_gone,()=>{});return;
   }
   let role=mk.role;
   const cids=room.cid||{};
   if(mk.cid){if(cids.h===mk.cid)role='h';else if(cids.g===mk.cid)role='g';} // la sedia la dice la FIRMA (lezione 2026-08-02)
-  if(room.presence&&room.presence[role]===true){UI.toMpcSetup();askConfirm(T.mp_err_full,()=>{});return;}
+  const sure=!!(mk.cid&&(cids.h===mk.cid||cids.g===mk.cid)); // sedia firmata mia: il "fantasma" del vecchio collegamento non blocca il rientro veloce
+  if(!sure&&room.presence&&room.presence[role]===true){UI.toMpcSetup();askConfirm(T.mp_err_full,()=>{});return;}
   const ref=db.ref('cups/'+mk.code);
   MPC={role,code:mk.code,ref,cid:mk.cid,offRefs:[],cfg:room.cfg,picks:[],guestIn:!!room.guest,started:false,simSent:{},duelInit:{},resCache:{},armedDuel:null,keepFor:null,
        names:{h:room.cfg.hn||'',g:(room.guest&&room.guest.n)||''}};
@@ -4402,8 +4422,8 @@ async function mpcResumeCup(){ // dal biglietto: si ricostruisce TUTTO dal cloud
   TOUR=mpcBuildTour(room.cfg,picksArr,{code:mk.code,role,cid:mk.cid,names:MPC.names});
   if(room.res)Object.keys(room.res).forEach(k=>{MPC.resCache[k]=room.res[k];MPC.simSent[k]=true;});
   mpcDrain(); // i verbali entrano in ordine, costruendo e avanzando anche il tabellone KO
-  try{ // la partita congelata vs IA e le scelte d'auto-incrocio vivono solo su questo dispositivo (specchio locale)
-    const mir=JSON.parse(localStorage.getItem('soccercard_mpc_tour')||'null');
+  try{ // la partita congelata vs IA e le scelte d'auto-incrocio vivono solo su questo dispositivo (specchio locale, uno per coppa)
+    const mir=JSON.parse(localStorage.getItem('soccercard_mpc_tour_'+mk.code)||localStorage.getItem('soccercard_mpc_tour')||'null');
     if(mir&&mir.mp&&mir.mp.code===mk.code){
       TOUR.keep=mir.keep||{};
       if(mir.liveG&&mir.liveG.tour){TOUR.liveG=mir.liveG;if(mpcResPlaced(TOUR,mpcLiveKey()))delete TOUR.liveG;} // sospesa valida solo se il suo verbale non è già a referto
@@ -4481,9 +4501,11 @@ window.UI={
     renderMpcSetup();
     $('mpc-code').value='';
     $('mpc-pname').value=lsGet('soccercard_player_name')||''; // il nome per l'albo si scrive una volta sola
-    const ck=mpcMarker(); // coppa in corso? il biglietto fa comparire "Riprendi"
-    $('mpc-resume-row').style.display=ck?'':'none';
-    if(ck){$('mpc-resume-btn').textContent=T.mpc_resume+' · '+ck.code;$('mpc-resume-x').title=T.mp_resume_x;}
+    const tks=mpcTickets().sort((a,b)=>(b.ts||0)-(a.ts||0)); // TUTTE le coppe in tasca, una riga ciascuna
+    $('mpc-resume-list').innerHTML=tks.map(t=>
+      `<div class="career-row"><span>🏆 <b>${escHtml(t.name||T.mpc_resume)}</b> · ${t.code}</span><span style="display:flex; gap:8px;">`+
+      `<button class="cbtn cres" title="${T.mpc_resume}" onclick="UI.mpcResume('${t.code}')">▶</button>`+
+      `<button class="cbtn cdel" title="${T.mp_resume_x}" onclick="UI.mpcResumeX('${t.code}')">✕</button></span></div>`).join('');
     const mn=$('mpc-name'); // il nome di default segue la lingua (senza toccare un nome scritto a mano)
     if(!mn.value||Object.keys(I18N).some(k=>I18N[k].mpc_defname===mn.value))mn.value=T.mpc_defname;
     show('scr-mpc-setup');
@@ -4512,8 +4534,8 @@ window.UI={
     else mpcLeave(true);
     UI.toMpcSetup();
   },
-  mpcResume(){mpcResumeCup();},
-  mpcResumeX(){mpcUnmark();try{localStorage.removeItem('soccercard_mpc_tour');}catch(e){}$('mpc-resume-row').style.display='none';},
+  mpcResume(code){mpcResumeCup(code);},
+  mpcResumeX(code){mpcUnmark(code);UI.toMpcSetup();}, // lascia perdere QUELLA coppa: via biglietto e specchio, la lista si ridisegna
   mpCancel(){ // dalla sala d'attesa: si torna alla scelta squadra
     if(MP&&MP.role==='guest'){try{MP.ref.child('guest').remove();MP.ref.child('presence/guest').remove();}catch(e){}}
     mpUnmark();
