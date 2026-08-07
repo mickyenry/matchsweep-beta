@@ -1100,7 +1100,18 @@ function aiChoose(G,side){
   // (contate dalla Lucidità; chi non conta stima la media). Stessa scala per prese e scarti:
   // in MatchSweep le carte prese NON valgono punti, quindi il confronto dev'essere onesto
   // (riscritto 2026-08-03 dal caso di Enrico: tavolo 10+4, l'IA prendeva il 4 servendo il 10 invece di posare il 3).
-  const pen=R=>{if(R<1||R>10)return 0;const cop=(f.vis>=3)?avail(R):(1.5+0.5*f.vis);return cop*9*(0.14+0.14*f.dif);}; // vis1 stima 2.0 (ingenua), vis2 2.5; da vis3 CONTA davvero. Curva Difesa tarata perché il "vizio dell'avidità" resti a dif 1-2 (voluto da Enrico) e sparisca da dif 3 in su
+  // INTELLIGENZA VERA (2026-08-08, richiesta di Enrico: "non è fame, è intelligenza nel gioco"):
+  // niente più indici — l'IA calcola la PROBABILITÀ REALE che l'avversario abbia in mano la carta che fa scopa.
+  // Carte non viste = mazzo + mano avversaria; copie vive contate dalla Lucidità (chi non conta stima);
+  // a fine tempo le non-viste calano → il pericolo sale da solo → più prudente nel finale (gratis).
+  const other=(side==='me')?'ai':'me';
+  const oppN=(G.hands[other]||[]).length;
+  const unseen=G.deck.length+oppN;
+  const pHit=(a,u,h)=>{if(a<=0||h<=0||u<=0)return 0;if(a>=u)return 1;let q=1;for(let i=0;i<h;i++){q*=Math.max(0,u-a-i)/(u-i);}return 1-q;};
+  const risk=R=>{if(R<1||R>10)return 0;const a=(f.vis>=3)?avail(R):(1.5+0.5*f.vis);return pHit(a,unseen,oppN);};
+  // Difesa = PRUDENZA: quanto pesa quella probabilità nella scelta (dif 1-2 quasi niente = vizio delle scarse, voluto)
+  const W=[4,6,16,18,40][Math.max(1,Math.min(5,Math.round(f.dif)))-1];
+  const pen=R=>W*risk(R);
   // fase 1: prese e scope
   const caps=[], hasCap={};
   hand.forEach((card,hi)=>{
@@ -1118,10 +1129,9 @@ function aiChoose(G,side){
         if(hand.length>1)score+=2+1.5*f.att;                        // dopo l'asso l'avversario POSA su tavolo vuoto: chi ha ATTACCO vede il colpo
         if(G.deck.length===0&&table.length>=1)score+=15+5*f.vis;    // ultima mano: l'assist va SPESO, non morire in mano
       }
-      else{ // PRESA NORMALE: zero valore delle carte — conta la FAME DI PRESA (tiene il tavolo basso e la partita viva)
-        // meno la Difesa che la disciplina, meno il pericolo del tavolo che LASCI. Le scarse mangiano, le grandi si controllano.
+      else{ // PRESA NORMALE: a parità di rischio meglio prendere (tavolo basso, +2 di buon senso) — poi conta SOLO il pericolo del tavolo che LASCI
         const R=table.reduce((a,c,i)=>a+(opt.includes(i)?0:c.v),0);
-        score=22-2.8*f.dif-pen(R);
+        score=2-pen(R);
       }
       caps.push({handIdx:hi,optIdx:oi,score});
     });
