@@ -87,6 +87,16 @@
   .mp-code-big{font-family:var(--px); font-size:1.5rem; color:#e8a020; letter-spacing:4px; text-align:center; margin:14px 0 6px; text-shadow:2px 2px 0 rgba(0,0,0,.5);}
   .mp-status{text-align:center; color:#cfc9b8; font-size:.95rem; margin:10px 0 16px; min-height:1.4em;}
   .mp-status .dots::after{content:'…';}
+  /* ===== Intervallo/Fine partita in stile TV: squadre ai lati, punteggio pixel al centro, marcatori a colonne ===== */
+  .tvline{display:flex; align-items:center; justify-content:center; gap:14px; margin-top:14px;}
+  .tvteam{flex:1; font-size:1.15rem; font-weight:600; color:#fff;}
+  .tvh{text-align:right;} .tva{text-align:left;}
+  .tvscore{font-family:var(--px); font-size:1.7rem; color:var(--oro); flex:0 0 auto;}
+  .tvmarc{display:flex; gap:28px; border-top:1px solid #55524a; margin-top:14px; padding-top:10px;}
+  .tvmarc .tvcol{flex:1; font-size:.9rem; color:#e8eef7; line-height:1.9;}
+  .tvmarc .tvcol.tvh{text-align:right;} .tvmarc .tvcol.tva{text-align:left;}
+  .tvmarc .min{color:#9aa89b; font-weight:700;}
+  .tvmarc .m-none{color:#64748b; text-align:center; flex:1;}
   /* ===== Coppa multiplayer: draft delle squadre (una a testa, a turno) ===== */
   .mpc-list{display:grid; grid-template-columns:1fr 1fr; gap:7px; margin-top:8px;}
   .mpick{display:flex; align-items:center; justify-content:space-between; gap:8px; background:#141414; border:2px solid #555; padding:9px 10px; font-size:.93rem;
@@ -557,6 +567,7 @@
       <div class="mp-code-big" id="mp-code-big">—</div>
       <div class="mp-status" id="mp-status"></div>
       <div class="btn-row2">
+        <button class="b90 c-blue wide" onclick="UI.mpShare()" data-i18n="share_btn">📤 Condividi il codice</button>
         <button class="b90 c-gray wide" onclick="UI.mpCancel()" data-i18n="mp_cancel">Annulla</button>
       </div>
     </div>
@@ -616,6 +627,7 @@
     <div class="mpc-turn" id="mpc-turn"></div>
     <div class="mpc-list" id="mpc-draft-list"></div>
     <div class="btn-row2">
+      <button class="b90 c-blue wide" onclick="UI.mpcShare()" data-i18n="share_btn">📤 Condividi il codice</button>
       <button class="b90 c-gray wide" onclick="UI.mpcCancel()" data-i18n="mp_cancel">Annulla</button>
     </div>
   </div>
@@ -791,12 +803,13 @@
 </div>
 
 <!-- ===== INTERVALLO (layout giornale) ===== -->
+<!-- intervallo e fine partita in STILE TV (2026-08-03, variante A scelta da Enrico): squadre grandi ai lati,
+     punteggio pixel oro al centro, marcatori incolonnati sotto la propria squadra. Vale per TUTTE le competizioni. -->
 <div id="scr-interval" class="screen">
   <div class="panel90" style="text-align:center;">
     <div class="phead" data-i18n="int_head">⏸ Intervallo</div>
-    <div id="int-teams" class="sub" style="margin-bottom:0;"></div>
-    <div class="big-score" id="int-score"></div>
-    <div class="marcatori"><h4 data-i18n="h_marcatori">Marcatori</h4><div id="int-marcatori"></div></div>
+    <div class="tvline"><span class="tvteam tvh" id="int-home"></span><span class="tvscore" id="int-score"></span><span class="tvteam tva" id="int-away"></span></div>
+    <div class="tvmarc" id="int-marcatori"></div>
     <button class="b90 c-green wide" style="margin-top:22px;" onclick="UI.secondHalf()" data-i18n="btn_2nd">Inizia il 2° tempo</button>
   </div>
 </div>
@@ -804,11 +817,10 @@
 <!-- ===== FINALE (layout giornale) ===== -->
 <div id="scr-final" class="screen">
   <div class="panel90" style="text-align:center;">
-    <div class="phead" data-i18n="fin_head">🏁 Fine partita</div>
-    <div id="fin-teams" class="sub" style="margin-bottom:0;"></div>
-    <div class="big-score" id="fin-score"></div>
+    <div class="phead" data-i18n="fin_head">Fine partita</div>
+    <div class="tvline"><span class="tvteam tvh" id="fin-home"></span><span class="tvscore" id="fin-score"></span><span class="tvteam tva" id="fin-away"></span></div>
     <div class="esito" id="fin-esito"></div>
-    <div class="marcatori"><h4 data-i18n="h_tabellino">Tabellino marcatori</h4><div id="fin-marcatori"></div></div>
+    <div class="tvmarc" id="fin-marcatori"></div>
     <div class="btn-row">
       <button id="btn-rigioca" class="b90 c-green wide" onclick="UI.rematch()" data-i18n="btn_rematch">Rigioca</button>
       <button id="btn-tour-back" class="b90 c-orange wide" style="display:none;" onclick="UI.tourAfterMatch()" data-i18n="btn_tourback">🏆 Torneo</button>
@@ -1037,10 +1049,19 @@ function playCard(G,side,handIdx,optIdx){
     const opt=opts[Math.min(optIdx||0,opts.length-1)];
     [...opt].sort((a,b)=>b-a).forEach(i=>r.captured.push(G.table.splice(i,1)[0]));
     G.lastCapturer=side;
-    if(G.table.length===0&&card.v!==1){ // GOL AL 99': la scopa vale anche sull'ultima carta (deciso 2026-07-22, prima era esclusa come nella Scopa classica)
+    if(G.table.length===0&&card.v!==1){ // GOL AL 99': la scopa vale anche sull'ultima carta (deciso 2026-07-22). Il tavolo dev'essere DAVVERO vuoto (regola "l'asso non blocca" provata e RITIRATA il 2026-08-03: si torna al rigore classico)
       r.scopa=true;G.score[side]++;
       const minute=(G.half-1)*45+Math.max(1,Math.ceil((G.playsInHalf+1)/36*45));
       G.scorers.push({side,num:card.v,name:G.players[side][card.v-2],minute,half:G.half});
+    }
+    // GOL DEL PORTIERE (idea di Enrico, 2026-08-03): l'asso è il NUMERO 1 — il portiere. Se in tavolo
+    // erano rimasti SOLTANTO assi e li porti via col tuo asso, è il portiere salito in area: gol suo.
+    // Rarissimo (~1 partita su 100): la frequenza giusta per una leggenda. L'asso su tavolo misto o
+    // vuoto resta l'assist di sempre: piglia tutto e non segna.
+    else if(card.v===1&&r.captured.length>0&&r.captured.every(c=>c.v===1)){
+      r.scopa=true;G.score[side]++;
+      const minute=(G.half-1)*45+Math.max(1,Math.ceil((G.playsInHalf+1)/36*45));
+      G.scorers.push({side,num:1,name:(G.gkName||'Portiere'),minute,half:G.half});
     }
   }
   G.playsInHalf++;
@@ -1083,7 +1104,8 @@ function aiChoose(G,side){
       if(card.v===1&&opt.length===0)return; // mai sprecare il piazzato a tavolo vuoto
       const clears=opt.length===table.length;
       let score;
-      if(clears&&card.v!==1)score=1000+card.v;                 // scopa = gol
+      if(card.v===1&&table.length>0&&table.every(c=>c.v===1))score=1001; // GOL DEL PORTIERE: asso su tavolo di soli assi
+      else if(clears&&card.v!==1)score=1000+card.v;             // scopa = gol
       else if(card.v===1)score=40+opt.length*15;               // asso: usalo solo se raccoglie tanto
       else score=100+opt.length*12+card.v;                     // presa normale
       caps.push({handIdx:hi,optIdx:oi,score});
@@ -1163,6 +1185,9 @@ I18N.it={
  mp_havecode:"Hai un codice? Entra nella stanza dell'amico",
  mp_note:"Uno crea la stanza e detta il codice, l'altro entra.",
  mp_cancel:'Annulla', mp_code_lbl:'Codice stanza',
+ share_btn:'📤 Condividi il codice',
+ share_txt:'Sfidami a MatchSweep! Codice: {0} —',
+ share_copied:'Codice copiato: incollalo dove vuoi (WhatsApp, ecc.).',
  mp_creating:'Preparo la stanza', mp_waiting:"In attesa dell'avversario",
  mp_share:'Comunica questo codice al tuo avversario e RESTA SU QUESTA SCHERMATA: la partita parte appena entra',
  mp_joining:'Entro nella stanza',
@@ -1259,9 +1284,9 @@ I18N.it={
  tipo_cup:'Coppa', tipo_league:'Campionato',
  // partita
  z_opp:'Avversario', z_table:'Tavolo', z_hand:'La tua mano — clicca una carta', btn_exit:'Esci',
- goalBig:'GOL!', chooser_cancel:'Annulla', c_yes:'Sì', c_no:'No',
- int_head:'Intervallo', h_marcatori:'Marcatori', btn_2nd:'Inizia il 2° tempo',
- fin_head:'Fine partita', h_tabellino:'Tabellino marcatori', btn_rematch:'Rigioca', btn_tourback:'Continua', btn_careerback:'Continua', btn_menu:'Menu',
+ goalBig:'GOL!', gk_name:'Portiere', chooser_cancel:'Annulla', c_yes:'Sì', c_no:'No',
+ int_head:'Intervallo', btn_2nd:'Inizia il 2° tempo',
+ fin_head:'Fine partita', btn_rematch:'Rigioca', btn_tourback:'Continua', btn_careerback:'Continua', btn_menu:'Menu',
  strip_pen:'⚽ RIGORE', strip_fk:'ASSIST',
  ph_pens:'RIGORI', ph_half1:'1° TEMPO', ph_half2:'2° TEMPO', ph_extra:'SUPPLEMENTARI', deckinfo:'mazzo: {0} carte',
  half1:'1° tempo', half2:'2° tempo', extra:'Supplementari',
@@ -1281,7 +1306,7 @@ I18N.it={
  fn_touch:' — tocca il campo per iniziare',
  ch_title:'Giochi il {0}{1}', ch_multi:'può prendere in più modi: scegli.', ch_scopa:'SCOPA!',
  no_scorers:'Nessun marcatore',
- res_win:'Vittoria {0}!', res_pts3:' (3 punti)', res_draw:'Pareggio', res_pts1:' (1 punto a testa)', res_pens:'{0} passa ai rigori!', dcr:'dcr',
+ res_pens:'{0} passa ai rigori!', dcr:'dcr',
  q_quit:"Vuoi annullare l'incontro?\nIl risultato attuale andrà perso.",
  qm_msg:'Vuoi lasciare la partita?',
  qm_msg_duel:'Vuoi lasciare la sfida diretta?',
@@ -1391,6 +1416,9 @@ I18N.en={
  mp_havecode:"Got a code? Join your friend's room",
  mp_note:'One player creates the room and shares the code, the other joins.',
  mp_cancel:'Cancel', mp_code_lbl:'Room code',
+ share_btn:'📤 Share the code',
+ share_txt:'Challenge me at MatchSweep! Code: {0} —',
+ share_copied:'Code copied: paste it anywhere (WhatsApp, etc.).',
  mp_creating:'Setting up the room', mp_waiting:'Waiting for your opponent',
  mp_share:'Share this code with your opponent and STAY ON THIS SCREEN: the match starts as soon as they join',
  mp_joining:'Joining the room',
@@ -1487,9 +1515,9 @@ I18N.en={
  tipo_cup:'Cup', tipo_league:'League',
  // match
  z_opp:'Opponent', z_table:'Table', z_hand:'Your hand — click a card', btn_exit:'Quit',
- goalBig:'GOAL!', chooser_cancel:'Cancel', c_yes:'Yes', c_no:'No',
- int_head:'Half-time', h_marcatori:'Scorers', btn_2nd:'Start the 2nd half',
- fin_head:'Full time', h_tabellino:'Scoresheet', btn_rematch:'Rematch', btn_tourback:'Continue', btn_careerback:'Continue', btn_menu:'Menu',
+ goalBig:'GOAL!', gk_name:'Goalkeeper', chooser_cancel:'Cancel', c_yes:'Yes', c_no:'No',
+ int_head:'Half-time', btn_2nd:'Start the 2nd half',
+ fin_head:'Full time', btn_rematch:'Rematch', btn_tourback:'Continue', btn_careerback:'Continue', btn_menu:'Menu',
  strip_pen:'⚽ PENALTY', strip_fk:'ASSIST',
  ph_pens:'PENALTIES', ph_half1:'1ST HALF', ph_half2:'2ND HALF', ph_extra:'EXTRA TIME', deckinfo:'deck: {0} cards',
  half1:'1st half', half2:'2nd half', extra:'Extra time',
@@ -1509,7 +1537,7 @@ I18N.en={
  fn_touch:' — touch the pitch to start',
  ch_title:'You play the {0}{1}', ch_multi:'can capture in more than one way: choose.', ch_scopa:'SWEEP!',
  no_scorers:'No scorers',
- res_win:'{0} win!', res_pts3:' (3 points)', res_draw:'Draw', res_pts1:' (1 point each)', res_pens:'{0} go through on penalties!', dcr:'pens',
+ res_pens:'{0} go through on penalties!', dcr:'pens',
  q_quit:'Abandon this match?\nThe current score will be lost.',
  qm_msg:'Leave this match?',
  qm_msg_duel:'Leave the head-to-head match?',
@@ -1889,7 +1917,7 @@ function resolveKits(A,B){
 }
 function applyKits(A,B){
   const {ka,kb}=resolveKits(A,B),rs=document.documentElement.style;
-  if(typeof G!=='undefined'&&G){G.kitA=ka;G.kitB=kb;} // le stesse maglie servono anche agli omini in campo
+  if(typeof G!=='undefined'&&G){G.kitA=ka;G.kitB=kb;G.gkName=T.gk_name;} // maglie per gli omini + nome del portiere (per il suo gol leggendario)
   rs.setProperty('--kitA1',ka.c1);rs.setProperty('--kitA2',ka.c2);
   rs.setProperty('--kitB1',kb.c1);rs.setProperty('--kitB2',kb.c2);
 }
@@ -2560,9 +2588,14 @@ async function doPlay(side,handIdx,optIdx){
   }else busy=false;
 }
 
-function marcatoriHTML(){
-  if(!G.scorers.length)return'<div class="m-row" style="color:#64748b;">'+T.no_scorers+'</div>';
-  return G.scorers.map(s=>`<div class="m-row"><span class="min">${s.minute}'</span> ${s.name} (n. ${s.num}) — ${s.side==='me'?G.names.me:G.names.ai}</div>`).join('');
+function marcatoriHTML(){ // marcatori incolonnati sotto la propria squadra (stile TV, 2026-08-03): niente più "— Squadra" ripetuto
+  if(!G.scorers.length)return'<div class="m-none">'+T.no_scorers+'</div>';
+  const col=side=>G.scorers.filter(s=>s.side===side).map(s=>
+    side==='me'
+      ?`<div>${s.name} (n. ${s.num}) <span class="min">${s.minute}'</span></div>`
+      :`<div><span class="min">${s.minute}'</span> ${s.name} (n. ${s.num})</div>`
+  ).join('');
+  return `<div class="tvcol tvh">${col('me')}</div><div class="tvcol tva">${col('ai')}</div>`;
 }
 
 /* ===== PRIMA PAGINA: la partita merita l'edizione straordinaria? =====
@@ -2576,7 +2609,7 @@ function newsStory(){
   const score=sMe+' - '+sAi;
   // tripletta: stesso marcatore 3 volte
   const cnt={};G.scorers.forEach(s=>{cnt[s.side+'|'+s.num]=(cnt[s.side+'|'+s.num]||0)+1;});
-  let tris=null;Object.entries(cnt).forEach(([k,n])=>{if(n>=3&&!tris){const p=k.split('|');tris=G.players[p[0]][+p[1]-2];}});
+  let tris=null;Object.entries(cnt).forEach(([k,n])=>{if(n>=3&&!tris){const p=k.split('|');const e=G.scorers.find(s=>s.side===p[0]&&String(s.num)===p[1]);tris=e?e.name:null;}}); // nome dal tabellino, non da players[num-2]: regge anche il n.1 (portiere)
   const g90=G.scorers.find(s=>s.minute===90); // il gol al 90' (l'ultima carta dei regolamentari)
   // rimonta: il vincitore è stato sotto di 2
   let comeback=false;
@@ -2614,7 +2647,7 @@ function renderNews(story){
   // FOTO 2 (il protagonista, primo piano nella SUA maglia): didascalia = migliore in campo
   const cnt2={};G.scorers.forEach(s=>{const k=s.side+'|'+s.num;cnt2[k]=(cnt2[k]||0)+1;});
   let mvp=null,best=0;
-  Object.entries(cnt2).forEach(([k,n])=>{if(n>best){best=n;const p=k.split('|');mvp={side:p[0],name:G.players[p[0]][+p[1]-2]};}});
+  Object.entries(cnt2).forEach(([k,n])=>{if(n>best){best=n;const p=k.split('|');const e=G.scorers.find(s=>s.side===p[0]&&String(s.num)===p[1]);mvp={side:p[0],name:e?e.name:''};}}); // nome dal tabellino: regge anche il n.1 (portiere)
   $('news-cap2').textContent=mvp?fmt(T.cap_mvp,mvp.name):T.cap_nogoals;
   const sc2=$('news-scene2');
   sc2.innerHTML='<div class="pb-spr big" style="left:26%;top:4%;"></div><div class="pb-ball" style="left:18%;top:74%;"></div>';
@@ -2661,7 +2694,7 @@ function endHalf(){
   $('kickoff-note').classList.add('hidden');
   if(G.half===1){
     if(G.mp)mpHalfTime(); // multiplayer: l'host prepara e pubblica la smazzata del 2° tempo
-    $('int-teams').textContent=`${G.names.me} vs ${G.names.ai}`;
+    $('int-home').textContent=G.names.me;$('int-away').textContent=G.names.ai;
     $('int-score').textContent=`${G.score.me} - ${G.score.ai}`;
     $('int-marcatori').innerHTML=marcatoriHTML();
     show('scr-interval');
@@ -2679,12 +2712,11 @@ function endHalf(){
       beginShootout();return;                                            // poi calci di rigore
     }
     G.fin=true;liveSave(); // il risultato è in cassaforte: chiudere il browser sul tabellino non lo cancella più
-    $('fin-teams').textContent=`${G.names.me} vs ${G.names.ai}`;
-    $('fin-score').textContent=`${G.score.me} - ${G.score.ai}`+(G.shootResult?` (${G.shootResult.me}-${G.shootResult.ai} ${T.dcr})`:'');
-    const noPts=(G.career&&G.career.euro&&G.career.euro!=='group')||(G.tour&&G.tour.ko); // partite secche/eliminazione: niente punti
-    let e=G.score.me>G.score.ai?fmt(T.res_win,G.names.me)+(noPts?'':T.res_pts3):G.score.me<G.score.ai?fmt(T.res_win,G.names.ai)+(noPts?'':T.res_pts3):T.res_draw+(noPts?'':T.res_pts1);
-    if(G.shootResult)e=fmt(T.res_pens,G.shootWinner==='me'?G.names.me:G.names.ai);
-    $('fin-esito').textContent=e;
+    $('fin-home').textContent=G.names.me;$('fin-away').textContent=G.names.ai;
+    $('fin-score').textContent=`${G.score.me} - ${G.score.ai}`;
+    // niente più esito ("Vittoria X!", "3 punti", "pareggio"): il punteggio parla da solo (deciso 2026-08-03).
+    // Resta SOLO la riga dei rigori, che è informazione vera.
+    $('fin-esito').textContent=G.shootResult?fmt(T.res_pens,G.shootWinner==='me'?G.names.me:G.names.ai)+` (${G.shootResult.me}-${G.shootResult.ai} ${T.dcr})`:'';
     $('fin-marcatori').innerHTML=marcatoriHTML();
     if(G.mp)mpFullTime(); // multiplayer: la stanza resta aperta per la rivincita
     // in torneo/carriera niente "Rigioca"; in multiplayer c'è ed è la RIVINCITA nella stessa stanza
@@ -2759,7 +2791,9 @@ const RULES=[
    <h5>Le prese</h5>
    <p>Se sul tavolo c'è una carta uguale alla tua, la presa è obbligatoria su quella (le somme non valgono). Altrimenti prendi qualsiasi combinazione di carte che sommi al valore della tua; se ci sono più prese possibili, scegli tu. Se non puoi prendere, la carta resta sul tavolo.</p>`},
  {t:"L'asso",h:`<h5>L'asso: l'assist</h5>
-   <p>L'asso non è un calciatore: è l'<b>assist</b>. Piglia sempre tutto quello che c'è sul tavolo e apparecchia il gol — ma non segna mai lui: la rete arriva soltanto con una scopa vera, il tocco del compagno. Puoi giocarlo anche a tavolo vuoto: in quel caso la carta esce dal gioco e non resta mai in campo (scelta tattica legittima). Fa eccezione solo la lotteria finale: <b>ai calci di rigore ogni asso è, naturalmente, un rigore</b>.</p>`},
+   <p>L'asso non è un calciatore: è l'<b>assist</b>. Piglia sempre tutto quello che c'è sul tavolo e apparecchia il gol — ma non segna mai lui: la rete arriva soltanto con una scopa vera, il tocco del compagno. Puoi giocarlo anche a tavolo vuoto: in quel caso la carta esce dal gioco e non resta mai in campo (scelta tattica legittima). Fa eccezione solo la lotteria finale: <b>ai calci di rigore ogni asso è, naturalmente, un rigore</b>.</p>
+   <h5>Il gol del portiere</h5>
+   <p>Una sola, leggendaria eccezione: l'asso è il <b>numero 1</b> — il portiere. Se in tavolo sono rimasti <b>soltanto assi</b> e li porti via col tuo asso, è il portiere salito in area sull'ultimo pallone: <b>GOL DEL PORTIERE</b>, a referto con la sua maglia numero 1. Capita circa una partita su cento: quando succede, si racconta.</p>`},
  {t:'Le squadre',h:`<h5>I marcatori</h5>
    <p>Ogni squadra ha 9 marcatori, numerati dal 2 al 10: il 10 è il fuoriclasse. Le carte non hanno semi: due carte uguali sono due azioni dello stesso giocatore. Carte, denari, settebello e primiera non assegnano punti: qui conta solo il gol.</p>
    <h5>Le epoche</h5>
@@ -2817,7 +2851,9 @@ I18N.en.rules=[
    <h5>Captures</h5>
    <p>If a card equal to yours is on the table, you must capture that single card (sums are not allowed). Otherwise you capture any combination of cards adding up to your card's value; if several captures are possible, you choose. If you cannot capture, your card stays on the table.</p>`},
  {t:'The ace',h:`<h5>The ace: the assist</h5>
-   <p>The ace is not a player: it is the <b>assist</b>. It always takes everything on the table and sets up the goal — but it never scores itself: the net only bulges with a real sweep, the teammate's finish. You can play it even when the table is empty: in that case the card simply leaves the game and never stays on the table (a legitimate tactical choice). The one exception is the final lottery: <b>in a penalty shootout every ace is, naturally, a penalty</b>.</p>`},
+   <p>The ace is not a player: it is the <b>assist</b>. It always takes everything on the table and sets up the goal — but it never scores itself: the net only bulges with a real sweep, the teammate's finish. You can play it even when the table is empty: in that case the card simply leaves the game and never stays on the table (a legitimate tactical choice). The one exception is the final lottery: <b>in a penalty shootout every ace is, naturally, a penalty</b>.</p>
+   <h5>The goalkeeper's goal</h5>
+   <p>One single, legendary exception: the ace is <b>number 1</b> — the goalkeeper. If <b>only aces</b> are left on the table and you take them with your own ace, that's the keeper coming up for the last ball: <b>GOALKEEPER'S GOAL</b>, on the scoresheet in his number 1 shirt. It happens about once every hundred matches: when it does, you'll talk about it.</p>`},
  {t:'The teams',h:`<h5>The scorers</h5>
    <p>Each team has 9 scorers, numbered 2 to 10: number 10 is the star player. Cards have no suits: two equal cards are two actions by the same player. Cards, coins, settebello and primiera award no points: here only goals count.</p>
    <h5>The eras</h5>
@@ -3640,7 +3676,18 @@ async function mpRejoinRoom(){
   }
   const ref=db.ref('rooms/'+mk.code), init=room.init||null;
   const d2=(room.deals&&room.deals['2'])||null;
-  if(!init){ // partita mai iniziata (il biglietto nasce solo a partita vera): stanza monca, si lascia perdere
+  if(!init){ // partita mai iniziata: se sono l'HOST torno in SALA D'ATTESA (giro WhatsApp da telefono, fix 2026-08-03)
+    if(mk.role==='host'&&room.host&&room.host.team&&!room.quit){
+      if(room.presence&&room.presence.host===true){mpShowSetup();askConfirm(T.mp_err_full,()=>{});return;} // sedia già occupata (finestra gemella)
+      MP={role:'host',code:mk.code,ref,cid:mk.cid,myTeam:room.host.team,oppTeam:null,round:0,rematchSent:0,
+          applied:0,queue:{},live:false,pumping:false,started:false,initSent:false,deal2:null,deal2Sent:false,wait2:false,done:false,oppOff:false,offRefs:[]};
+      ref.child('presence/host').set(true);
+      ref.child('presence/host').onDisconnect().set(false);
+      mpMark();
+      mpShowWait(mk.code,T.mp_share+'.<br>'+T.mp_waiting);
+      mpListen();mpHostGuestHook(ref); // se l'amico entra ora, si parte normalmente
+      return;
+    }
     mpUnmark();mpShowSetup();askConfirm(T.mp_res_gone,()=>{});return;
   }
   // la MIA sedia la dice la FIRMA depositata in stanza, non il biglietto (che su uno stesso PC può
@@ -3704,6 +3751,8 @@ async function mpCreateRoom(){
   }catch(e){MP=null;mpShowSetup();askConfirm(T.mp_err_net,()=>{});return;}
   ref.child('presence/host').set(true);
   ref.child('presence/host').onDisconnect().set(false);
+  mpMark(); // biglietto GIÀ in sala d'attesa (fix 2026-08-03): da telefono si va su WhatsApp a dettare il codice
+  // e il sistema può ricaricare la pagina — al ritorno "Riprendi" rimette in sala (o in partita, se l'amico è entrato)
   $('mp-code-big').textContent=code;
   mpStatus(T.mp_share+'.<br>'+T.mp_waiting,true);
   mpListen();
@@ -3777,6 +3826,11 @@ function mpcMark(){if(!MPC)return;lsSet('soccercard_mpc_room',JSON.stringify({co
 function mpcUnmark(){try{localStorage.removeItem('soccercard_mpc_room');}catch(e){}}
 function mpcMarker(){try{const m=JSON.parse(lsGet('soccercard_mpc_room')||'null');return (m&&m.code&&m.role)?m:null;}catch(e){return null;}}
 function mpcStatus(msg,dots){const el=$('mpc-status');if(el)el.innerHTML=msg?msg+(dots?'<span class="dots"></span>':''):'';}
+async function shareCode(code){ // 📤 il codice va su WhatsApp senza copiature a mano (fix del giro-WhatsApp da telefono, 2026-08-03)
+  const txt=fmt(T.share_txt,code)+' '+location.href;
+  if(navigator.share){try{await navigator.share({text:txt});}catch(e){} return;} // annullato dall'utente = silenzio
+  try{await navigator.clipboard.writeText(txt);askConfirm(T.share_copied,()=>{});}catch(e){askConfirm(txt,()=>{});} // desktop: copia negli appunti
+}
 /* ----- parti PURE (deterministiche, testate in node) ----- */
 function mpcBuildTour(cfg,picks,mp){ // stessi ingredienti → stessa coppa su entrambi i dispositivi
   const owners=cfg.pool.map(()=>'ia');
@@ -3966,6 +4020,7 @@ async function mpcCreateCup(){
     MPC={role:'h',code,ref,cid:Math.random().toString(36).slice(2,10),offRefs:[],cfg,picks:[],guestIn:false,started:false,fresh:true,simSent:{},duelInit:{},resCache:{},armedDuel:null,keepFor:null,names:{h:pname,g:''}};
     await ref.set({created:firebase.database.ServerValue.TIMESTAMP,touched:firebase.database.ServerValue.TIMESTAMP,cfg});
     ref.child('cid/h').set(MPC.cid); // firma della sedia (lezione del 2026-08-02: mai fidarsi del solo biglietto)
+    mpcMark(); // biglietto GIÀ alla creazione (fix 2026-08-03): il giro su WhatsApp per dettare il codice non deve costare la coppa
   }catch(e){MPC=null;show('scr-mpc-setup');askConfirm(T.mp_err_net,()=>{});return;}
   ref.child('presence/h').set(true);
   ref.child('presence/h').onDisconnect().set(false);
@@ -4339,6 +4394,7 @@ async function mpcResumeCup(){ // dal biglietto: si ricostruisce TUTTO dal cloud
   mpcMark();mpcTouch();
   const picksArr=[];if(room.draft)Object.keys(room.draft).forEach(k=>{picksArr[+k]=room.draft[k];});
   if(picksArr.filter(Boolean).length<room.cfg.per*2){ // draft ancora in corso: si riprende da lì (child_added rigioca le scelte)
+    MPC.fresh=true; // in fase draft "Annulla" chiude la coppa (serve in due): stesso comportamento della creazione
     mpcListenCommon();if(role==='h')mpcHostHook();
     renderMpcDraft();return;
   }
@@ -4418,6 +4474,8 @@ window.UI={
   mpJoin(){mpJoinRoom();},
   mpResume(){mpRejoinRoom();},
   mpResumeX(){mpUnmark();$('mp-resume-row').style.display='none';}, // lascia perdere: via il biglietto
+  mpShare(){if(MP&&MP.code)shareCode(MP.code);},
+  mpcShare(){if(MPC&&MPC.code)shareCode(MPC.code);},
   /* ===== Coppa multiplayer ===== */
   toMpcSetup(){ // ramo COPPA: riprendi, entra con codice, o crea la tua
     renderMpcSetup();
