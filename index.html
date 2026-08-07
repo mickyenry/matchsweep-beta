@@ -692,7 +692,7 @@
       <button class="b90 c-gray wide" style="font-size:.5rem;" onclick="UI.csvImport()" data-i18n="btn_csv_im">📥 Importa rose (CSV)</button>
     </div>
     <input type="file" id="csv-file" accept=".csv,text/csv" style="display:none;" onchange="UI.csvFile(this)">
-    <div class="rules-note" id="teams-msg" data-i18n="teams_note">I numeri 2–10 sono i marcatori (il 10 è il fuoriclasse). Le modifiche valgono per le prossime partite. Per rinominare tutto in blocco: scarica il CSV, aprilo in Excel, modifica nomi/rose/forza e reimportalo (salva come "CSV UTF-8"; non toccare CODICE ed EPOCA).</div>
+    <div class="rules-note" id="teams-msg" data-i18n="teams_note">I numeri 2–10 sono i marcatori. Le modifiche valgono per le prossime partite. Per rinominare tutto in blocco: scarica il CSV, aprilo in Excel, modifica nomi/rose/forza e reimportalo (salva come "CSV UTF-8"; non toccare CODICE ed EPOCA).</div>
   </div>
 </div>
 
@@ -1083,9 +1083,9 @@ function playCard(G,side,handIdx,optIdx){
    + jolly raro e casuale: ogni tanto una papera o un lampo di genio. */
 function pickBySkill(cands,param,rnd){
   rnd=rnd||Math.random;
-  // jolly raro (~4%): a caso una mossa qualunque (papera) o comunque la migliore (lampo)
-  if(rnd()<0.04)return rnd()<0.5?cands[Math.floor(rnd()*cands.length)]:cands[0];
-  const pBest=0.45+0.12*(param-1); // 1->0.45, 3->0.69, 5->0.93
+  // jolly raro: a caso una mossa qualunque (papera) o comunque la migliore (lampo) — al vertice si dimezza
+  if(rnd()<(param>=5?0.02:0.04))return rnd()<0.5?cands[Math.floor(rnd()*cands.length)]:cands[0];
+  const pBest=0.45+0.12*(param-1)+(param>=5?0.04:0); // 1->0.45, 3->0.69, 5->0.97 (vertice alzato 2026-08-03: "IA troppo facile")
   if(cands.length>1&&rnd()>pBest)return cands[1+Math.floor(rnd()*(cands.length-1))];
   return cands[0];
 }
@@ -1093,32 +1093,48 @@ function aiChoose(G,side){
   const hand=G.hands[side],table=G.table;
   const f=(G.forza&&G.forza[side])||{att:3,dif:3,vis:3};
   const rnd=G.rnd||Math.random;
-  // fase 1: prese e scope
-  const caps=[];
+  const seen0=G.seen||{};
+  // quante carte di valore v possono ancora arrivare in mano all'avversario (conteggio, pesa con la Lucidità)
+  const avail=v=>{if(v<1||v>10)return 0;const mine=hand.filter(c=>c.v===v).length;return Math.max(0,4-(seen0[v]||0)-mine);};
+  // fase 1: prese e scope — ora l'IA guarda anche COSA LASCIA sul tavolo (fix "IA troppo facile", 2026-08-03)
+  const caps=[], hasCap={};
   hand.forEach((card,hi)=>{
     captureOptions(card,table).forEach((opt,oi)=>{
       if(card.v===1&&opt.length===0)return; // mai sprecare il piazzato a tavolo vuoto
+      hasCap[hi]=true;
       const clears=opt.length===table.length;
       let score;
       if(card.v===1&&table.length>0&&table.every(c=>c.v===1))score=1001; // GOL DEL PORTIERE: asso su tavolo di soli assi
       else if(clears&&card.v!==1)score=1000+card.v;             // scopa = gol
-      else if(card.v===1)score=40+opt.length*15;               // asso: usalo solo se raccoglie tanto
-      else score=100+opt.length*12+card.v;                     // presa normale
+      else if(card.v===1)score=40+opt.length*15;                // asso: usalo solo se raccoglie tanto
+      else score=100+opt.length*12+card.v;                      // presa normale
+      if(score<1000){ // il tavolo RESIDUO dopo la presa: se somma R e le carte R girano ancora, sto servendo la scopa all'avversario
+        const R=table.reduce((a,c,i)=>a+(opt.includes(i)?0:c.v),0);
+        if(R>=1&&R<=10){
+          let danger=(11-R);
+          if(f.vis>=3)danger*=avail(R)/4; // il conteggio dice quanto è REALE il pericolo
+          score-=danger*18*(0.3+0.14*f.dif); // con difesa alta una presa avvelenata vale meno di uno scarto prudente
+        }
+      }
       caps.push({handIdx:hi,optIdx:oi,score});
     });
   });
-  if(caps.length){caps.sort((a,b)=>b.score-a.score);return pickBySkill(caps,f.att,rnd);}
-  // fase 2: scarto (nessuna presa) — difesa + lucidità
-  const seen=G.seen||{};
+  // fase 2: scarti possibili = SOLO carte senza prese (una carta con presa disponibile prende per forza: regola)
   const lays=hand.map((card,hi)=>{
+    if(hasCap[hi])return null;
     const sum=table.reduce((a,c)=>a+c.v,0)+card.v;
     let risk=(sum>=1&&sum<=10)?(11-sum):0;                      // se lascio "sum", l'avversario fa scopa con una carta = sum
-    if(f.vis>=3&&sum>=1&&sum<=10)risk*=Math.max(0,4-(seen[sum]||0))/4; // lucidità: se le carte "sum" sono quasi finite, rischio basso
+    if(f.vis>=3&&sum>=1&&sum<=10)risk*=avail(sum)/4;            // lucidità: se le carte "sum" sono quasi finite, rischio basso
     risk*=(0.4+0.15*f.dif);                                     // difesa: dif1 ~0.55, dif5 ~1.15
     if(card.v===1)risk+=8;                                      // non buttare l'asso
     return {handIdx:hi,optIdx:0,score:-risk*10-card.v};
-  });
+  }).filter(Boolean);
   lays.sort((a,b)=>b.score-a.score);
+  if(caps.length){
+    caps.sort((a,b)=>b.score-a.score);
+    if(lays.length&&caps[0].score<lays[0].score)return pickBySkill(lays,f.dif,rnd); // presa avvelenata RIFIUTATA: meglio scartare (mossa legale, da giocatore vero)
+    return pickBySkill(caps,f.att,rnd);
+  }
   return pickBySkill(lays,f.dif,rnd);
 }
 
@@ -1247,7 +1263,7 @@ I18N.it={
  // squadre
  teams_head:'Configurazione squadre', lbl_country:'Paese', tab_rosa:'Rosa', tab_forza:'Forza', tab_custom:'Inventata',
  btn_save:'Salva', btn_csv_ex:'Scarica rose (CSV)', btn_csv_im:'Importa rose (CSV)',
- teams_note:'I numeri 2–10 sono i marcatori (il 10 è il fuoriclasse). Le modifiche valgono per le prossime partite. Per rinominare tutto in blocco: scarica il CSV, aprilo in Excel, modifica nomi/rose/forza e reimportalo (salva come "CSV UTF-8"; non toccare CODICE ed EPOCA).',
+ teams_note:'I numeri 2–10 sono i marcatori. Le modifiche valgono per le prossime partite. Per rinominare tutto in blocco: scarica il CSV, aprilo in Excel, modifica nomi/rose/forza e reimportalo (salva come "CSV UTF-8"; non toccare CODICE ed EPOCA).',
  ed_fixed:'Club (nome fisso)', ed_kit:'Maglia', ed_players:'Giocatori (2–10) — {0}',
  ed_slot1:'Questa è la tua squadra inventata (al posto di <b>{0}</b>). Si modifica dalla scheda "Inventata".',
  ed_slot2:'Squadra inventata: la forza si regola dalla scheda "Inventata".',
@@ -1478,7 +1494,7 @@ I18N.en={
  // teams
  teams_head:'Team setup', lbl_country:'Country', tab_rosa:'Squad', tab_forza:'Strength', tab_custom:'Custom',
  btn_save:'Save', btn_csv_ex:'Download squads (CSV)', btn_csv_im:'Import squads (CSV)',
- teams_note:'Numbers 2–10 are the scorers (10 is the star player). Changes apply to upcoming matches. To rename everything in one go: download the CSV, open it in Excel, edit names/squads/strength and re-import it (save as "CSV UTF-8"; do not touch the CODICE and EPOCA columns).',
+ teams_note:'Numbers 2–10 are the scorers. Changes apply to upcoming matches. To rename everything in one go: download the CSV, open it in Excel, edit names/squads/strength and re-import it (save as "CSV UTF-8"; do not touch the CODICE and EPOCA columns).',
  ed_fixed:'Club (fixed name)', ed_kit:'Kit', ed_players:'Players (2–10) — {0}',
  ed_slot1:'This is your custom team (in place of <b>{0}</b>). Edit it in the "Custom" tab.',
  ed_slot2:'Custom team: strength is set in the "Custom" tab.',
@@ -1787,21 +1803,39 @@ function loadClubsRaw(){
 /* Forza preimpostata (att,dif,vis 1-5) solo per alcune big — il resto parte a 3-3-3 e lo regoli tu.
    Es. Milan '90 (Sacchi) più forte del Milan di oggi. */
 const FORZA_PRESET={ // agganciata ai nomi di FANTASIA dei default (chi importa nomi suoi ha la forza già salvata)
-  'Diavoli Milano':{e90:{att:5,dif:5,vis:5},oggi:{att:3,dif:3,vis:3}},
-  'Vesuvio FC':{e90:{att:5,dif:3,vis:4},oggi:{att:4,dif:4,vis:4}},
-  'Biscione FC':{e90:{att:4,dif:4,vis:4},oggi:{att:4,dif:5,vis:4}},
-  'Zebre Torino':{e90:{att:4,dif:5,vis:4},oggi:{att:3,dif:4,vis:3}},
-  'Lanterna Blu':{e90:{att:4,dif:4,vis:3},oggi:{att:2,dif:2,vis:2}},
-  'Northfield Utd':{e90:{att:5,dif:4,vis:4},oggi:{att:3,dif:3,vis:3}},
-  'Port Rovers':{e90:{att:3,dif:3,vis:3},oggi:{att:4,dif:4,vis:5}},
-  'Royal Cannons':{e90:{att:4,dif:5,vis:4},oggi:{att:4,dif:4,vis:4}},
-  'Skyburn City':{e90:{att:2,dif:2,vis:2},oggi:{att:5,dif:4,vis:5}},
-  'Corona Blanca':{e90:{att:4,dif:4,vis:4},oggi:{att:5,dif:4,vis:5}},
-  'Condal FC':{e90:{att:5,dif:4,vis:5},oggi:{att:4,dif:3,vis:5}},
-  'Manzanares CF':{e90:{att:3,dif:3,vis:3},oggi:{att:4,dif:5,vis:4}},
-  'Alpenstern FC':{e90:{att:4,dif:4,vis:4},oggi:{att:5,dif:5,vis:5}},
-  'Ruhrstadt 09':{e90:{att:4,dif:3,vis:4},oggi:{att:4,dif:3,vis:4}},
-  'Rheinwerk 04':{e90:{att:3,dif:3,vis:3},oggi:{att:4,dif:4,vis:4}}
+  // griglia COMPLETA per tutte le 32 (2026-08-03, configurata con Enrico via tabella editabile: poche corazzate, scala intera 1-5, personalità)
+  'Diavoli Milano':{e90:{att:5,dif:5,vis:5},oggi:{att:4,dif:3,vis:4}},
+  'Vesuvio FC':{e90:{att:5,dif:3,vis:5},oggi:{att:4,dif:5,vis:5}},
+  'Biscione FC':{e90:{att:5,dif:4,vis:4},oggi:{att:5,dif:5,vis:5}},
+  'Lupa Roma':{e90:{att:4,dif:3,vis:4},oggi:{att:4,dif:4,vis:4}},
+  'Zebre Torino':{e90:{att:5,dif:5,vis:4},oggi:{att:4,dif:4,vis:4}},
+  'Giglio Viola':{e90:{att:4,dif:3,vis:3},oggi:{att:3,dif:3,vis:3}},
+  'Aquila Celeste':{e90:{att:4,dif:4,vis:3},oggi:{att:3,dif:3,vis:4}},
+  'Lanterna Blu':{e90:{att:4,dif:4,vis:5},oggi:{att:2,dif:2,vis:2}},
+  'Northfield Utd':{e90:{att:5,dif:4,vis:5},oggi:{att:4,dif:3,vis:3}},
+  'Port Rovers':{e90:{att:3,dif:3,vis:4},oggi:{att:5,dif:4,vis:5}},
+  'Royal Cannons':{e90:{att:4,dif:5,vis:5},oggi:{att:4,dif:5,vis:5}}, // famous back four; oggi la corona inglese è dello Skyburn
+  'West Bridge FC':{e90:{att:3,dif:3,vis:3},oggi:{att:4,dif:3,vis:2}},
+  'White Rose AFC':{e90:{att:4,dif:4,vis:3},oggi:{att:2,dif:3,vis:2}},
+  'Coalport Utd':{e90:{att:5,dif:2,vis:3},oggi:{att:4,dif:4,vis:3}},
+  'North Lane FC':{e90:{att:3,dif:3,vis:3},oggi:{att:4,dif:3,vis:3}},
+  'Skyburn City':{e90:{att:2,dif:2,vis:2},oggi:{att:5,dif:5,vis:5}},
+  'Corona Blanca':{e90:{att:5,dif:4,vis:5},oggi:{att:5,dif:5,vis:5}}, // il '90 pre-galacticos
+  'Condal FC':{e90:{att:5,dif:5,vis:5},oggi:{att:5,dif:4,vis:5}},
+  'Manzanares CF':{e90:{att:3,dif:3,vis:3},oggi:{att:3,dif:5,vis:5}},
+  'Naranja CF':{e90:{att:3,dif:3,vis:3},oggi:{att:2,dif:2,vis:2}},
+  'Giralda FC':{e90:{att:3,dif:2,vis:3},oggi:{att:2,dif:3,vis:3}},
+  'Leones Norte':{e90:{att:3,dif:4,vis:3},oggi:{att:4,dif:4,vis:4}},
+  'Atlantico CF':{e90:{att:4,dif:4,vis:3},oggi:{att:2,dif:2,vis:2}},
+  'Triana Verde':{e90:{att:3,dif:2,vis:3},oggi:{att:3,dif:2,vis:3}},
+  'Ruhrstadt 09':{e90:{att:5,dif:4,vis:5},oggi:{att:4,dif:4,vis:5}},
+  'Alpenstern FC':{e90:{att:5,dif:4,vis:5},oggi:{att:5,dif:5,vis:5}},
+  'Rheinwerk 04':{e90:{att:4,dif:4,vis:3},oggi:{att:4,dif:5,vis:4}},
+  'Weserstadt SV':{e90:{att:4,dif:4,vis:3},oggi:{att:2,dif:3,vis:2}},
+  'Schwaben SV':{e90:{att:4,dif:4,vis:3},oggi:{att:3,dif:4,vis:3}},
+  'Bergbau 04':{e90:{att:3,dif:4,vis:4},oggi:{att:2,dif:2,vis:2}},
+  'Hafen SV':{e90:{att:3,dif:3,vis:3},oggi:{att:2,dif:2,vis:2}},
+  'Niederrhein BV':{e90:{att:3,dif:3,vis:3},oggi:{att:3,dif:3,vis:3}}
 };
 function ensureForza(clubs){
   clubs.forEach(c=>{
@@ -2791,7 +2825,7 @@ const RULES=[
    <h5>Il gol del portiere</h5>
    <p>Una sola, leggendaria eccezione: l'asso è il <b>numero 1</b> — il portiere. Se in tavolo sono rimasti <b>soltanto assi</b> e li porti via col tuo asso, è il portiere salito in area sull'ultimo pallone: <b>GOL DEL PORTIERE</b>, a referto con la sua maglia numero 1. Capita circa una partita su cento: quando succede, si racconta.</p>`},
  {t:'Le squadre',h:`<h5>I marcatori</h5>
-   <p>Ogni squadra ha 9 marcatori, numerati dal 2 al 10: il 10 è il fuoriclasse. Le carte non hanno semi: due carte uguali sono due azioni dello stesso giocatore. Carte, denari, settebello e primiera non assegnano punti: qui conta solo il gol.</p>
+   <p>Ogni squadra ha 9 marcatori, numerati dal 2 al 10. Le carte non hanno semi: due carte uguali sono due azioni dello stesso giocatore. Carte, denari, settebello e primiera non assegnano punti: qui conta solo il gol.</p>
    <h5>Le epoche</h5>
    <p>Ogni club ha due rose: <b>Anni 90</b> e <b>Oggi</b>. Nelle amichevoli puoi far sfidare anche epoche diverse (la stessa squadra di ieri contro quella di oggi). I calciatori e le maglie si modificano in Opzioni → Squadre → scheda Rosa.</p>
    <h5>Le rose via CSV</h5>
@@ -2851,7 +2885,7 @@ I18N.en.rules=[
    <h5>The goalkeeper's goal</h5>
    <p>One single, legendary exception: the ace is <b>number 1</b> — the goalkeeper. If <b>only aces</b> are left on the table and you take them with your own ace, that's the keeper coming up for the last ball: <b>GOALKEEPER'S GOAL</b>, on the scoresheet in his number 1 shirt. It happens about once every hundred matches: when it does, you'll talk about it.</p>`},
  {t:'The teams',h:`<h5>The scorers</h5>
-   <p>Each team has 9 scorers, numbered 2 to 10: number 10 is the star player. Cards have no suits: two equal cards are two actions by the same player. Cards, coins, settebello and primiera award no points: here only goals count.</p>
+   <p>Each team has 9 scorers, numbered 2 to 10. Cards have no suits: two equal cards are two actions by the same player. Cards, coins, settebello and primiera award no points: here only goals count.</p>
    <h5>The eras</h5>
    <p>Each club has two squads: <b>'90s</b> and <b>Today</b>. In friendlies you can even match different eras (yesterday's team against today's). Players and kits are edited in Options → Teams → Squad tab.</p>
    <h5>Squads via CSV</h5>
