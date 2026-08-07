@@ -4503,7 +4503,7 @@ window.UI={
     $('mpc-pname').value=lsGet('soccercard_player_name')||''; // il nome per l'albo si scrive una volta sola
     const tks=mpcTickets().sort((a,b)=>(b.ts||0)-(a.ts||0)); // TUTTE le coppe in tasca, una riga ciascuna
     $('mpc-resume-list').innerHTML=tks.map(t=>
-      `<div class="career-row"><span>🏆 <b>${escHtml(t.name||T.mpc_resume)}</b> · ${t.code}</span><span style="display:flex; gap:8px;">`+
+      `<div class="career-row"><span><b>${escHtml(t.name||T.mpc_resume)}</b> · ${t.code}</span><span style="display:flex; gap:8px;">`+
       `<button class="cbtn cres" title="${T.mpc_resume}" onclick="UI.mpcResume('${t.code}')">▶</button>`+
       `<button class="cbtn cdel" title="${T.mp_resume_x}" onclick="UI.mpcResumeX('${t.code}')">✕</button></span></div>`).join('');
     const mn=$('mpc-name'); // il nome di default segue la lingua (senza toccare un nome scritto a mano)
