@@ -1096,7 +1096,12 @@ function aiChoose(G,side){
   const seen0=G.seen||{};
   // quante carte di valore v possono ancora arrivare in mano all'avversario (conteggio, pesa con la Lucidità)
   const avail=v=>{if(v<1||v>10)return 0;const mine=hand.filter(c=>c.v===v).length;return Math.max(0,4-(seen0[v]||0)-mine);};
-  // fase 1: prese e scope — ora l'IA guarda anche COSA LASCIA sul tavolo (fix "IA troppo facile", 2026-08-03)
+  // PERICOLO di lasciare un tavolo che somma R: proporzionale alle COPIE di R ancora in giro
+  // (contate dalla Lucidità; chi non conta stima la media). Stessa scala per prese e scarti:
+  // in MatchSweep le carte prese NON valgono punti, quindi il confronto dev'essere onesto
+  // (riscritto 2026-08-03 dal caso di Enrico: tavolo 10+4, l'IA prendeva il 4 servendo il 10 invece di posare il 3).
+  const pen=R=>{if(R<1||R>10)return 0;const cop=(f.vis>=3)?avail(R):(1.5+0.5*f.vis);return cop*9*(0.3+0.14*f.dif);}; // vis1 stima 2.0 (ingenua), vis2 2.5; da vis3 CONTA davvero — così il "vizio dell'avidità" resta alle squadre scarse (voluto, 2026-08-03)
+  // fase 1: prese e scope
   const caps=[], hasCap={};
   hand.forEach((card,hi)=>{
     captureOptions(card,table).forEach((opt,oi)=>{
@@ -1106,19 +1111,14 @@ function aiChoose(G,side){
       let score;
       if(card.v===1&&table.length>0&&table.every(c=>c.v===1))score=1001; // GOL DEL PORTIERE: asso su tavolo di soli assi
       else if(clears&&card.v!==1)score=1000+card.v;             // scopa = gol
-      else if(card.v===1){ // GESTIONE DELL'ASSIST (2026-08-03, tattica di Enrico: tienilo per l'ULTIMA MANO e giocalo presto — 3 carte per aprire, 2 per punire)
-        score=40+opt.length*15;                                     // base: usalo dove raccoglie tanto
-        if(hand.length>1)score+=8+4*f.att;                          // dopo l'asso l'avversario POSA su tavolo vuoto: chi ha ATTACCO vede il colpo (att5 +28, att1 +12)
-        if(G.deck.length===0&&table.length>=1)score+=50+10*f.vis;   // ultima mano: l'assist va SPESO, non morire in mano — la LUCIDITÀ sente l'urgenza (vis5 +100)
+      else if(card.v===1){ // GESTIONE DELL'ASSIST (tattica di Enrico: tienilo per l'ULTIMA MANO e giocalo presto — 3 carte per aprire, 2 per punire)
+        score=40+opt.length*15;                                     // base: usalo dove raccoglie tanto (e il tavolo resta vuoto: niente rischio)
+        if(hand.length>1)score+=8+4*f.att;                          // dopo l'asso l'avversario POSA su tavolo vuoto: chi ha ATTACCO vede il colpo
+        if(G.deck.length===0&&table.length>=1)score+=50+10*f.vis;   // ultima mano: l'assist va SPESO, non morire in mano
       }
-      else score=100+opt.length*12+card.v;                      // presa normale
-      if(score<1000){ // il tavolo RESIDUO dopo la presa: se somma R e le carte R girano ancora, sto servendo la scopa all'avversario
+      else{ // PRESA NORMALE: vale poco di suo — conta soprattutto il tavolo che LASCI
         const R=table.reduce((a,c,i)=>a+(opt.includes(i)?0:c.v),0);
-        if(R>=1&&R<=10){
-          let danger=(11-R);
-          if(f.vis>=3)danger*=avail(R)/4; // il conteggio dice quanto è REALE il pericolo
-          score-=danger*18*(0.3+0.14*f.dif); // con difesa alta una presa avvelenata vale meno di uno scarto prudente
-        }
+        score=12+opt.length*3+card.v-pen(R);
       }
       caps.push({handIdx:hi,optIdx:oi,score});
     });
@@ -1127,11 +1127,9 @@ function aiChoose(G,side){
   const lays=hand.map((card,hi)=>{
     if(hasCap[hi])return null;
     const sum=table.reduce((a,c)=>a+c.v,0)+card.v;
-    let risk=(sum>=1&&sum<=10)?(11-sum):0;                      // se lascio "sum", l'avversario fa scopa con una carta = sum
-    if(f.vis>=3&&sum>=1&&sum<=10)risk*=avail(sum)/4;            // lucidità: se le carte "sum" sono quasi finite, rischio basso
-    risk*=(0.4+0.15*f.dif);                                     // difesa: dif1 ~0.55, dif5 ~1.15
-    if(card.v===1)risk+=8;                                      // non buttare l'asso
-    return {handIdx:hi,optIdx:0,score:-risk*10-card.v};
+    let s=-pen(sum)-card.v;
+    if(card.v===1)s-=80; // non buttare l'asso
+    return {handIdx:hi,optIdx:0,score:s};
   }).filter(Boolean);
   lays.sort((a,b)=>b.score-a.score);
   if(caps.length){
