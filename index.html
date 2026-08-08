@@ -370,7 +370,8 @@
 
   /* ===== PRIMA PAGINA a fine partita: "edizione straordinaria", solo quando la partita lo merita ===== */
   #scr-news{justify-content:flex-start; padding-top:5vh; overflow-y:auto;}
-  .news-sheet{background:#f2eddc; color:#141414; border:3px solid #141414; box-shadow:8px 8px 0 rgba(0,0,0,.5); width:100%; max-width:660px; padding:18px 22px 20px;}
+  .news-sheet{background:#e1b5a5; color:#141414; border:3px solid #141414; box-shadow:8px 8px 0 rgba(0,0,0,.5); width:100%; max-width:660px; padding:18px 22px 20px;} /* SOLO il giornale del dopo-partita è ROSA ANTICO (Enrico 2026-08-08, gradazione 3 di 4): menu e resto del gioco restano com'erano */
+  .news-sheet .pb-sub{color:#6b3d32;} /* inchiostro caldo sulla carta antica */
   .news-sheet .pb-headline{margin-top:8px; line-height:1.15;}
   .news-score{font-family:var(--px); font-size:2rem; text-align:center; color:#141414; margin:12px 0 2px;}
   .news-sub{text-align:center; color:#5a5648; font-size:.95rem; margin-bottom:8px;}
@@ -384,7 +385,7 @@
   .news-photo.ph2{width:41%; transform:rotate(2deg);
     background-image:radial-gradient(rgba(0,0,0,.28) 1px, transparent 1.4px), radial-gradient(circle at 50% 42%, #999 0 34%, #707070 35% 100%);
     background-size:4px 4px, auto;}
-  .news-cap{position:absolute; left:0; right:0; bottom:0; background:#141414; color:#e9e5d8; font-family:var(--px); font-size:.45rem; padding:5px 4px; text-align:center; letter-spacing:.5px;}
+  .news-cap{position:absolute; left:0; right:0; bottom:0; background:#141414; color:#e1b5a5; font-family:var(--px); font-size:.45rem; padding:5px 4px; text-align:center; letter-spacing:.5px;}
   /* nelle foto del giornale gli omini restano A COLORI (maglie vere delle squadre — richiesta Enrico);
      il filtro B/N di .pb-spr vale solo per le foto decorative dello sfondo menu */
   .news-photo .pb-spr{filter:none;}
@@ -591,18 +592,10 @@
     <div id="mpc-teams-pick" class="pick-list"></div>
     <label data-i18n="mpc_lbl_per">Squadre controllate da ciascun giocatore</label>
     <select id="mpc-per"></select><!-- opzioni dinamiche: fino a metà dei partecipanti spuntati -->
-    <label data-i18n="lbl_groups">Gironi (sorteggio casuale)</label>
+    <label data-i18n="lbl_groups">Gironi e qualificate (sorteggio casuale)</label>
     <select id="mpc-groups"></select>
-    <label data-i18n="lbl_formula">Girone iniziale</label>
+    <label data-i18n="lbl_formula">Formula (la finale è sempre secca)</label>
     <select id="mpc-formula"><option value="2" data-i18n="opt_ar">Andata e ritorno</option><option value="1" data-i18n="opt_a">Solo andata</option></select>
-    <label data-i18n="lbl_qual">Squadre alla fase finale</label>
-    <select id="mpc-qual">
-      <option value="4" data-i18n="opt_q4">4 — semifinali e finale</option>
-      <option value="8" data-i18n="opt_q8">8 — quarti, semifinali e finale</option>
-      <option value="2" data-i18n="opt_q2">2 — finale secca</option>
-    </select>
-    <label data-i18n="lbl_kofin">Fasi finali (la finale è sempre secca)</label>
-    <select id="mpc-ko"><option value="2" data-i18n="opt_ar">Andata e ritorno</option><option value="1" data-i18n="opt_a">Solo andata</option></select>
     <div class="btn-row2">
       <button class="b90 c-green wide" onclick="UI.mpcCreate()" data-i18n="mpc_create">Crea la coppa</button>
     </div>
@@ -869,18 +862,10 @@
     <div id="tour-teams-pick" class="pick-list"></div>
     <label data-i18n="lbl_yourteam">La tua squadra</label>
     <select id="tour-user"></select>
-    <label data-i18n="lbl_groups">Gironi (sorteggio casuale)</label>
+    <label data-i18n="lbl_groups">Gironi e qualificate (sorteggio casuale)</label>
     <select id="tour-groups"></select>
-    <label data-i18n="lbl_formula">Girone iniziale</label>
+    <label data-i18n="lbl_formula">Formula (la finale è sempre secca)</label>
     <select id="tour-formula"><option value="2" data-i18n="opt_ar">Andata e ritorno</option><option value="1" data-i18n="opt_a">Solo andata</option></select>
-    <label data-i18n="lbl_qual">Squadre alla fase finale</label>
-    <select id="tour-qual">
-      <option value="4" data-i18n="opt_q4">4 — semifinali e finale</option>
-      <option value="8" data-i18n="opt_q8">8 — quarti, semifinali e finale</option>
-      <option value="2" data-i18n="opt_q2">2 — finale secca</option>
-    </select>
-    <label data-i18n="lbl_kofin">Fasi finali (la finale è sempre secca)</label>
-    <select id="tour-ko"><option value="2" data-i18n="opt_ar">Andata e ritorno</option><option value="1" data-i18n="opt_a">Solo andata</option></select>
     <div class="btn-row2">
       <button class="b90 c-green wide" onclick="UI.tourCreate()" data-i18n="btn_createcup">Crea coppa</button>
       <button class="b90 c-gray" id="setup-hist" style="flex:0 0 auto; font-size:.5rem; padding:13px 16px;" onclick="UI.toHistory()" data-i18n="opt_history">Albo d'oro</button>
@@ -1352,18 +1337,18 @@ I18N.it={
  // torneo / coppa
  pick_cup:'Coppa', pick_season:'Stagione',
  ts_head:'Nuova Coppa', lbl_cupname:'Nome della coppa',
- lbl_groups:'Gironi (sorteggio casuale)', grp_one:'1 — girone unico', grp_n:'{0} gironi da {1}', grp_h:'Girone {0}', seed_gn:'{0}ª gir. {1}',
- lbl_kofin:'Fasi finali (la finale è sempre secca)', warn_grp:'⚠ Squadre e qualificate non si dividono in {0} gironi uguali.',
+ lbl_groups:'Gironi e qualificate (sorteggio casuale)', grp_u4:'Girone unico — prime 4 alla fase finale', grp_u2:'Girone unico — prime 2 in finale',
+ grp_2:'2 gironi da {0} — prime 2 in semifinale', grp_4:'4 gironi da {0} — prime 2 ai quarti', grp_h:'Girone {0}', seed_gn:'{0}ª gir. {1}',
+ warn_grp:'⚠ Le squadre non si dividono in {0} gironi uguali.',
  brk_note_g:'Gironi in corso: ecco le provvisoriamente qualificate (prime {0} di ogni girone) e gli incroci previsti. Il tabellone definitivo si forma alla fine.',
- lbl_parts:'Squadre partecipanti', lbl_cupera:'Epoca della coppa', lbl_formula:'Girone iniziale',
- opt_ar:'Andata e ritorno', opt_a:'Solo andata', lbl_qual:'Squadre alla fase finale',
- opt_q4:'4 — semifinali e finale', opt_q8:'8 — quarti, semifinali e finale', opt_q2:'2 — finale secca',
+ lbl_parts:'Squadre partecipanti', lbl_cupera:'Epoca della coppa', lbl_formula:'Formula (la finale è sempre secca)',
+ opt_ar:'Andata e ritorno', opt_a:'Solo andata',
  btn_createcup:'Crea coppa', myCup:'Coppa', myCareer:'La mia carriera', default_tour:'Torneo', default_career:'Carriera',
  ts_note:'Ogni coppa completata finisce nell\'<b>Albo d\'oro</b>. La coppa si salva da sola.',
  sub_brk:'Tabellone',
  btn_next:'Prosegui', btn_resume_susp:'Riprendi la partita sospesa', btn_newcomp:'Nuova competizione', btn_abandon:'Annulla',
  sel_all:'Seleziona tutte',
- warn_2:'⚠ Servono almeno 2 squadre.', warn_q:'⚠ Con la fase finale a {0} servono almeno {0} squadre.',
+ warn_2:'⚠ Servono almeno 2 squadre.',
  ko_q:'Quarti di finale', ko_s:'Semifinali', ko_f:'Finale',
  tt_done:'CAMPIONE: {0}!', tt_run:'{0} — {1} squadre',
  phase_grp:'Fase a girone', phase_ar:'Campionato, andata e ritorno', phase_sa:'Campionato, solo andata', youlead:' — tu guidi {0}',
@@ -1585,18 +1570,18 @@ I18N.en={
  // tournament / cup
  pick_cup:'Cup', pick_season:'Season',
  ts_head:'New Cup', lbl_cupname:'Cup name',
- lbl_groups:'Groups (random draw)', grp_one:'1 — single group', grp_n:'{0} groups of {1}', grp_h:'Group {0}', seed_gn:'#{0} grp {1}',
- lbl_kofin:'Knockout rounds (the final is always one match)', warn_grp:'⚠ Teams and qualifiers don\'t split into {0} equal groups.',
+ lbl_groups:'Groups & qualifiers (random draw)', grp_u4:'Single group — top 4 to the knockout stage', grp_u2:'Single group — top 2 to the final',
+ grp_2:'2 groups of {0} — top 2 to the semifinals', grp_4:'4 groups of {0} — top 2 to the quarterfinals', grp_h:'Group {0}', seed_gn:'#{0} grp {1}',
+ warn_grp:'⚠ The teams don\'t split into {0} equal groups.',
  brk_note_g:'Group stage in progress: these are the provisional qualifiers (top {0} of each group) and the planned pairings. The final bracket forms at the end.',
- lbl_parts:'Participating teams', lbl_cupera:'Cup era', lbl_formula:'Group stage',
- opt_ar:'Home and away', opt_a:'Single round', lbl_qual:'Teams in the knockout stage',
- opt_q4:'4 — semifinals and final', opt_q8:'8 — quarterfinals, semifinals and final', opt_q2:'2 — single-match final',
+ lbl_parts:'Participating teams', lbl_cupera:'Cup era', lbl_formula:'Format (the final is always one match)',
+ opt_ar:'Home and away', opt_a:'Single round',
  btn_createcup:'Create cup', myCup:'Cup', myCareer:'My career', default_tour:'Tournament', default_career:'Career',
  ts_note:'Every completed cup goes into the <b>Hall of fame</b>. The cup saves itself.',
  sub_brk:'Bracket',
  btn_next:'Continue', btn_resume_susp:'Resume the suspended match', btn_newcomp:'New competition', btn_abandon:'Abandon',
  sel_all:'Select all',
- warn_2:'⚠ At least 2 teams are needed.', warn_q:'⚠ A knockout stage of {0} needs at least {0} teams.',
+ warn_2:'⚠ At least 2 teams are needed.',
  ko_q:'Quarterfinals', ko_s:'Semifinals', ko_f:'Final',
  tt_done:'CHAMPIONS: {0}!', tt_run:'{0} — {1} teams',
  phase_grp:'Group stage', phase_ar:'League, home and away', phase_sa:'League, single round', youlead:' — you manage {0}',
@@ -1997,11 +1982,16 @@ function refreshTourUser(){
   fillGroupedFrom(sel,idxs, idxs.map(String).includes(prev)?prev:(idxs.length?String(idxs[0]):null));
   refreshGroupsSel($('tour-groups'),idxs.length);
 }
-function refreshGroupsSel(gsel,n){ // opzioni gironi valide per n squadre spuntate (solo gruppi uguali)
+function qualFor(nG,n){return nG===1?(n>=4?4:2):nG===2?4:8;} // qualificate DERIVATE dai gironi: via due tendine (Enrico 2026-08-08: "2 opzioni e non 4")
+function refreshGroupsSel(gsel,n){ // opzioni gironi valide per n squadre spuntate (solo gruppi uguali); l'etichetta dice già le qualificate
   if(!gsel)return;
   const prev=+gsel.value||1, opts=groupOptionsFor(n);
   gsel.innerHTML='';
-  opts.forEach(k=>{const o=document.createElement('option');o.value=k;o.textContent=k===1?T.grp_one:fmt(T.grp_n,k,n/k);gsel.appendChild(o);});
+  opts.forEach(k=>{
+    const o=document.createElement('option');o.value=k;
+    o.textContent=k===1?(n>=4?T.grp_u4:T.grp_u2):k===2?fmt(T.grp_2,n/2):fmt(T.grp_4,n/4);
+    gsel.appendChild(o);
+  });
   gsel.value=opts.includes(prev)?prev:1;
 }
 function fillTeamSelects(){
@@ -2515,7 +2505,7 @@ var currentTourTab='ris';
 function injectPaper(){
   const oggi=new Date().toLocaleDateString('it-IT',{month:'long',year:'numeric'});
   const htmlFor=id=>`<div class="pb-head">MATCH<span class="tred">SWEEP!</span></div>
-    <div class="pb-sub">★ summer edition 2026 ★</div>
+    <div class="pb-sub">★ Summer Edition v. 1.0 ★</div>
     <div class="pb-rule"></div>
     ${id==='scr-menu'?`<div class="pb-headline" data-i18n="headline">Clamoroso al Cibali!</div>`:''}
     <div class="pb-cols"><div class="pb-col"></div><div class="pb-col"></div><div class="pb-col"></div><div class="pb-col"></div></div>
@@ -4142,12 +4132,12 @@ function mpcHostHook(){ // l'amico è entrato: il draft comincia
 }
 async function mpcCreateCup(){
   const sel=CLUBS.map((c,i)=>$('mc-'+i)&&$('mc-'+i).checked?i:-1).filter(i=>i>=0);
-  const per=+$('mpc-per').value, qual=+$('mpc-qual').value, era=$('mpc-era').value, double=$('mpc-formula').value==='2';
-  const nG=+$('mpc-groups').value||1, koD=$('mpc-ko').value==='2'?1:0;
+  const per=+$('mpc-per').value, era=$('mpc-era').value, double=$('mpc-formula').value==='2';
+  const nG=+$('mpc-groups').value||1, koD=double?1:0; // una formula per tutta la coppa
+  const qual=qualFor(nG,sel.length); // derivate, come in solitaria
   if(sel.length<2){$('mpc-msg').textContent=T.warn_2;return;}
-  if(sel.length<qual){$('mpc-msg').textContent=fmt(T.warn_q,qual);return;}
   if(sel.length<per*2){$('mpc-msg').textContent=fmt(T.mpc_warn_per,per*2);return;}
-  if(nG>1&&(sel.length%nG||qual%nG||qual/nG>sel.length/nG)){$('mpc-msg').textContent=fmt(T.warn_grp,nG);return;}
+  if(nG>1&&(sel.length%nG||qual/nG>sel.length/nG)){$('mpc-msg').textContent=fmt(T.warn_grp,nG);return;}
   const grp=nG>1?mkGroupAssign(sel.length,nG):sel.map(()=>0); // il sorteggio lo fa l'host: viaggia nel cfg
   const pool=sel.map(i=>mkTeam(i,era));
   const name=$('mpc-name').value.trim()||T.mpc_defname;
@@ -4770,14 +4760,14 @@ window.UI={
     const user=+$('tour-user').value;
     if(!sel.includes(user))sel.push(user);
     if(sel.length<2){$('tour-msg').textContent=T.warn_2;return;}
-    const qual=+$('tour-qual').value, era=$('tour-era').value, nG=+$('tour-groups').value||1;
-    if(sel.length<qual){$('tour-msg').textContent=fmt(T.warn_q,qual);return;}
-    if(nG>1&&(sel.length%nG||qual%nG||qual/nG>sel.length/nG)){$('tour-msg').textContent=fmt(T.warn_grp,nG);return;}
+    const era=$('tour-era').value, nG=+$('tour-groups').value||1;
+    const qual=qualFor(nG,sel.length); // derivate: girone unico→4 (o 2 se poche), 2 gironi→semifinali, 4 gironi→quarti
+    if(nG>1&&(sel.length%nG||qual/nG>sel.length/nG)){$('tour-msg').textContent=fmt(T.warn_grp,nG);return;}
     const teams=sel.map(i=>mkTeam(i,era)); // tutte della stessa epoca
     const grp=nG>1?mkGroupAssign(teams.length,nG):teams.map(()=>0); // sorteggio dei gironi
     const dbl=$('tour-formula').value==='2';
     TOUR={name:$('tour-name').value.trim()||T.default_tour,type:'cup',koQual:qual,phase:'group',ko:null,era,
-      nG,grp,koDouble:$('tour-ko').value==='2',
+      nG,grp,koDouble:dbl, // UNA formula per tutta la coppa (finale sempre secca)
       teams,user:sel.indexOf(user),double:dbl,
       schedule:genGroupSchedule(grp,nG,dbl),scorers:{},archived:false,created:Date.now()};
     saveTour();renderTour();show('scr-tour');
