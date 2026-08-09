@@ -463,8 +463,8 @@
     .rrow .rs{font-size:.58rem;}
     .tour-tabs{grid-template-columns:1fr 1fr; gap:6px;} /* 4 schede in fila non stanno in 320px: 2 righe da 2, nomi interi (niente abbreviazioni) */
     .tour-tabs .b90{font-size:.46rem; padding:10px 4px; gap:4px;}
-    .subtab{font-size:.44rem; padding:9px 5px;}
-    .subtabs{gap:6px;}
+    .subtab{font-size:.44rem; padding:9px 5px; flex:1 1 46%;} /* 4 schede coppa: 2 righe da 2 su phone */
+    .subtabs{gap:6px; flex-wrap:wrap;}
     /* regolamento: 8 schede — su phone 2 colonne coi nomi interi (in 4 colonne sbordavano dal SE) */
     .rules-tabs{grid-template-columns:1fr 1fr; gap:6px;}
     .rule-tab{font-size:.46rem; padding:9px 4px; letter-spacing:0;}
@@ -1001,17 +1001,50 @@ function startHalf(G,half){
 }
 function isLastPlay(G){return G.deck.length===0&&G.hands.me.length===0&&G.hands.ai.length===0;}
 
-/* Calci di rigore: 10 carte a testa da un mazzo nuovo, tavolo vuoto, una carta a turno.
-   Ogni scopa è un rigore trasformato. Niente ridistribuzioni: finite le carte, si conta. */
+/* CALCI DI RIGORE VERI (2026-08-09, richiesta di Enrico: "come nella realtà"). 10 carte a testa da un
+   mazzo nuovo. Il tiratore cala una carta COPERTA (sceglie l'angolo); il portiere risponde con una sua
+   carta (il tuffo): STESSO VALORE = PARATA, altrimenti gol. Le carte escono dal gioco — sul tavolo si
+   vede solo il rigore in corso. 5 a testa alternati, stop appena la serie è decisa; dal 6° OLTRANZA
+   (decide la sorte: carta pescata a caso); carte finite in oltranza → nuove 10 a testa. */
 function startShootout(G){
   const deck=shuffle(buildDeck(),G.rnd);
   deck.forEach(c=>{if(c.v===1)c.kind='rigore';}); // ai rigori ogni asso è un rigore
-  G.half++;
+  if(!G.pens){ // PRIMA serie: contatori a zero; le ricariche d'oltranza passano di qui senza toccarli
+    G.half++;
+    G.pens={g:{me:0,ai:0},t:{me:0,ai:0},pend:null};
+    G.turn=(G.half%2===1)?G.starter1:(G.starter1==='me'?'ai':'me');
+  }
   G.deck=[];G.table=[];G.seen={};
   const sA=deck.splice(0,10),sB=deck.splice(0,10);
   G.hands=G.flip?{me:sB,ai:sA}:{me:sA,ai:sB}; // flip: come startHalf, per gli schermi specchiati del multiplayer
   G.playsInHalf=0;G.lastCapturer=null;
-  G.turn=(G.half%2===1)?G.starter1:(G.starter1==='me'?'ai':'me');
+}
+function pensPlay(G,side,handIdx){ // un colpo dei rigori: tiro (coperto) oppure tuffo (risolve)
+  const P=G.pens, other=side==='me'?'ai':'me';
+  const rnd=G.rnd||Math.random;
+  const oltre=P.t.me>=5&&P.t.ai>=5; // dal 6° rigore decide la sorte: l'indice scelto viene ignorato
+  const idx=oltre?Math.floor(rnd()*G.hands[side].length):Math.min(handIdx||0,G.hands[side].length-1);
+  const card=G.hands[side].splice(idx,1)[0];
+  const r={side,card,captured:[],scopa:false,laid:false,endOfHalf:false,newRound:false,pen:true};
+  if(!P.pend){ // TIRO: la carta resta coperta in mezzo al campo finché il portiere non si tuffa
+    G.table=[card];P.pend=card;r.shot=true;
+    G.playsInHalf++;G.turn=other; // tocca al portiere
+    return r;
+  }
+  // TUFFO: si scopre tutto — valore uguale = parata, altrimenti gol del tiratore
+  G.table=[P.pend,card];
+  if(G.seen){G.seen[P.pend.v]=(G.seen[P.pend.v]||0)+1;G.seen[card.v]=(G.seen[card.v]||0)+1;}
+  const saved=(card.v===P.pend.v);
+  r.dive=true;r.saved=saved;r.shooter=other;
+  P.t[other]++;
+  if(!saved){P.g[other]++;G.score[other]++;r.scopa=true;} // il contratto resta quello di sempre: i gol dei rigori passano da G.score e vengono scorporati a fine serie
+  P.pend=null;
+  const gm=P.g.me,ga=P.g.ai,tm=P.t.me,ta=P.t.ai;
+  if((tm<=5&&ta<=5&&(gm>ga+(5-ta)||ga>gm+(5-tm)))||(tm>5&&tm===ta&&gm!==ga))r.endOfHalf=true; // decisa: aritmetica nei 5, coppia spaiata in oltranza
+  else if(G.hands.me.length===0&&G.hands.ai.length===0)startShootout(G); // oltranza a mani vuote: nuove 10 a testa (stesso seme = identica in MP)
+  G.playsInHalf++;
+  G.turn=side; // chi ha appena parato va sul dischetto: A B B A A B…
+  return r;
 }
 /* PRNG deterministico col seme: nelle sfide dirette di coppa i mazzi di OGNI smazzata (supplementari
    e rigori compresi) nascono in locale dallo stesso seme pubblicato dall'host — niente mazzi sul cloud. */
@@ -1019,6 +1052,7 @@ function mulberry32(seed){return function(){seed|=0;seed=seed+0x6D2B79F5|0;let t
 
 /* Gioca una carta. optIdx sceglie tra le opzioni di presa. */
 function playCard(G,side,handIdx,optIdx){
+  if(G.pens)return pensPlay(G,side,handIdx); // rigori: regole loro (tiro coperto + tuffo), niente tavolo
   const card=G.hands[side].splice(handIdx,1)[0];
   if(G.seen)G.seen[card.v]=(G.seen[card.v]||0)+1; // carta giocata = vista
   const opts=captureOptions(card,G.table);
@@ -1030,7 +1064,7 @@ function playCard(G,side,handIdx,optIdx){
     G.lastCapturer=side;
     if(G.table.length===0&&card.v!==1){ // GOL AL 99': la scopa vale anche sull'ultima carta (deciso 2026-07-22). Il tavolo dev'essere DAVVERO vuoto (regola "l'asso non blocca" provata e RITIRATA il 2026-08-03: si torna al rigore classico)
       r.scopa=true;G.score[side]++;
-      const minute=(G.half-1)*45+Math.max(1,Math.ceil((G.playsInHalf+1)/36*45));
+      const minute=G.half<=2?(G.half-1)*45+Math.max(1,Math.ceil((G.playsInHalf+1)/36*45)):90+Math.max(1,Math.ceil((G.playsInHalf+1)/36*30)); // supplementari: la smazzata si spalma su 30' (91'-120'), mai oltre (fix Enrico 2026-08-09: si vedeva 128')
       G.scorers.push({side,num:card.v,name:G.players[side][card.v-2],minute,half:G.half});
     }
     // GOL DEL PORTIERE (idea di Enrico, 2026-08-03): l'asso è il NUMERO 1 — il portiere. Se in tavolo
@@ -1039,7 +1073,7 @@ function playCard(G,side,handIdx,optIdx){
     // vuoto resta l'assist di sempre: piglia tutto e non segna.
     else if(card.v===1&&r.captured.length>0&&r.captured.every(c=>c.v===1)){
       r.scopa=true;G.score[side]++;
-      const minute=(G.half-1)*45+Math.max(1,Math.ceil((G.playsInHalf+1)/36*45));
+      const minute=G.half<=2?(G.half-1)*45+Math.max(1,Math.ceil((G.playsInHalf+1)/36*45)):90+Math.max(1,Math.ceil((G.playsInHalf+1)/36*30)); // come sopra: supplementari su 30'
       G.scorers.push({side,num:1,name:(G.gkName||'Portiere'),minute,half:G.half});
     }
   }
@@ -1079,6 +1113,13 @@ function aiChoose(G,side){
   const seen0=G.seen||{};
   // quante carte di valore v possono ancora arrivare in mano all'avversario (conteggio, pesa con la Lucidità)
   const avail=v=>{if(v<1||v>10)return 0;const mine=hand.filter(c=>c.v===v).length;return Math.max(0,4-(seen0[v]||0)-mine);};
+  if(G.pens){ // RIGORI: si sceglie l'angolo. Tiro = valore con MENO copie vive fuori dalla mia mano
+    // (più difficile che il portiere abbia la carta gemella); tuffo = stesso ragionamento rovesciato
+    // (indovinare l'angolo "furbo"). La Lucidità conta le copie, il resto sono nervi (rumore).
+    const cands=hand.map((c,i)=>({handIdx:i,optIdx:0,score:-avail(c.v)+rnd()*1.4}));
+    cands.sort((a,b)=>b.score-a.score);
+    return pickBySkill(cands,G.pens.pend?f.vis:f.att,rnd);
+  }
   // PERICOLO di lasciare un tavolo che somma R: proporzionale alle COPIE di R ancora in giro
   // (contate dalla Lucidità; chi non conta stima la media). Stessa scala per prese e scarti:
   // in MatchSweep le carte prese NON valgono punti, quindi il confronto dev'essere onesto
@@ -1293,7 +1334,8 @@ I18N.it={
  err_dup:'due club hanno lo stesso nome: devono essere tutti diversi',
  // storico e regolamento
  hist_head:"Albo d'oro", hist_bacheca:'Bacheca dei club', rules_head:'Regolamento ufficiale',
- h_none:'Nessun torneo concluso: la storia comincia dalla prossima finale.', h_winner:'Vincitore', h_second:'finalista/2°',
+ h_none:'Nessun torneo concluso: la storia comincia dalla prossima finale.', h_winner:'Vincitore', h_second:'2°',
+ hist_amici:'Sfide tra amici', hist_solo:'Coppe in solitaria', hist_solo_tag:'in solitaria',
  h_capo:'Capocannoniere', h_exaequo:' ex aequo ', h_with:'con {0} gol', h_empty2:'Bacheche ancora vuote.',
  tipo_cup:'Coppa', tipo_league:'Campionato',
  // partita
@@ -1312,11 +1354,13 @@ I18N.it={
  log_take:'<b>{0}</b> gioca il {1} e prende {2}',
  log_scopa:' — <b style="color:var(--oro)">SCOPA! GOL!</b>',
  log_newround:'— Fine giro: il mazzo distribuisce 3 nuove carte a testa (quelle sul tavolo restano) —',
- log_shootout:'⚽ Calci di rigore — 10 carte a testa su tavolo vuoto: ogni scopa è un rigore trasformato. Se finisce pari, si ribatte.',
+ log_shootout:'⚽ Calci di rigore — 5 a testa: carta coperta contro il tuffo del portiere, stesso valore = parata. Poi oltranza.',
+ log_pen_shot:'{0} sul dischetto…', log_pen_save:'🧤 PARATA! {0} indovina l\'angolo di {1}!', log_pen_goal:'⚽ RIGORE! {0} spiazza il portiere ({1}-{2})',
+ fn_sudden:'⚽ OLTRANZA!', fn_sudden2:'decide la sorte: carte pescate a caso',
  fn_kickoff:"🪙 CALCIO D'INIZIO", fn_kick2:'Monetina: inizia {0}{1}',
  fn_2half:'2° TEMPO', fn_2half2:'Inizia {0}{1}',
  fn_extra:'SUPPLEMENTARI!', fn_extra2:'Se resta pari, calci di rigore — inizia {0}{1}',
- fn_pens:'⚽ RIGORI!', fn_pens2:'10 carte a testa, una a turno: ogni scopa è un rigore segnato{0}',
+ fn_pens:'⚽ RIGORI!', fn_pens2:'5 a testa: una carta per tirare, una per tuffarti — stesso valore = parata{0}',
  fn_touch:' — tocca il campo per iniziare',
  ch_title:'Giochi il {0}{1}', ch_multi:'può prendere in più modi: scegli.', ch_scopa:'SCOPA!',
  no_scorers:'Nessun marcatore',
@@ -1345,13 +1389,13 @@ I18N.it={
  opt_ar:'Andata e ritorno', opt_a:'Solo andata',
  btn_createcup:'Crea coppa', myCup:'Coppa', myCareer:'La mia carriera', default_tour:'Torneo', default_career:'Carriera',
  ts_note:'Ogni coppa completata finisce nell\'<b>Albo d\'oro</b>. La coppa si salva da sola.',
- sub_brk:'Tabellone',
+ sub_brk:'Fasi finali', sub_class:'Classifica',
  btn_next:'Prosegui', btn_resume_susp:'Riprendi la partita sospesa', btn_newcomp:'Nuova competizione', btn_abandon:'Annulla',
  sel_all:'Seleziona tutte',
  warn_2:'⚠ Servono almeno 2 squadre.',
  ko_q:'Quarti di finale', ko_s:'Semifinali', ko_f:'Finale',
  tt_done:'CAMPIONE: {0}!', tt_run:'{0} — {1} squadre',
- phase_grp:'Fase a girone', phase_ar:'Campionato, andata e ritorno', phase_sa:'Campionato, solo andata', youlead:' — tu guidi {0}',
+ phase_grp:'Fase a girone', phase_ar:'Campionato, andata e ritorno', phase_sa:'Campionato, solo andata',
  tblh:['','Pt','G','V','N','P','GF','GS','DR'],
  nogoals:'Ancora nessun gol', day_n:'{0}ª giornata', seed_n:'{0}ª',
  toplay_p:'(da giocare)', leg1:'(andata)', leg2:'(ritorno)', leg2tp:'(ritorno, da giocare)',
@@ -1526,7 +1570,8 @@ I18N.en={
  err_dup:'two clubs share the same name: they must all be different',
  // history & rules
  hist_head:'Hall of fame', hist_bacheca:'Club trophy cabinets', rules_head:'Official rulebook',
- h_none:'No tournament finished yet: history starts with the next final.', h_winner:'Winner', h_second:'runner-up',
+ h_none:'No tournament finished yet: history starts with the next final.', h_winner:'Winner', h_second:'2nd',
+ hist_amici:'Cups with friends', hist_solo:'Solo cups', hist_solo_tag:'solo',
  h_capo:'Top scorer', h_exaequo:' joint with ', h_with:'with {0} goals', h_empty2:'Trophy cabinets still empty.',
  tipo_cup:'Cup', tipo_league:'League',
  // match
@@ -1545,11 +1590,13 @@ I18N.en={
  log_take:'<b>{0}</b> plays the {1} and captures {2}',
  log_scopa:' — <b style="color:var(--oro)">SWEEP! GOAL!</b>',
  log_newround:'— End of round: the deck deals 3 new cards each (table cards stay) —',
- log_shootout:'⚽ Penalty shootout — 10 cards each on an empty table: every sweep is a converted penalty. If it ends level, another round is played.',
+ log_shootout:'⚽ Penalty shootout — 5 each: hidden card against the keeper\'s dive, same value = save. Then sudden death.',
+ log_pen_shot:'{0} steps up…', log_pen_save:'🧤 SAVED! {0} reads {1}\'s corner!', log_pen_goal:'⚽ GOAL! {0} sends the keeper the wrong way ({1}-{2})',
+ fn_sudden:'⚽ SUDDEN DEATH!', fn_sudden2:'fate decides: random cards',
  fn_kickoff:'🪙 KICK-OFF', fn_kick2:'Coin toss: {0} starts{1}',
  fn_2half:'2ND HALF', fn_2half2:'{0} starts{1}',
  fn_extra:'EXTRA TIME!', fn_extra2:'If still level, penalty shootout — {0} starts{1}',
- fn_pens:'⚽ PENALTIES!', fn_pens2:'10 cards each, one per turn: every sweep is a scored penalty{0}',
+ fn_pens:'⚽ PENALTIES!', fn_pens2:'5 each: one card to shoot, one to dive — same value = save{0}',
  fn_touch:' — touch the pitch to start',
  ch_title:'You play the {0}{1}', ch_multi:'can capture in more than one way: choose.', ch_scopa:'SWEEP!',
  no_scorers:'No scorers',
@@ -1578,13 +1625,13 @@ I18N.en={
  opt_ar:'Home and away', opt_a:'Single round',
  btn_createcup:'Create cup', myCup:'Cup', myCareer:'My career', default_tour:'Tournament', default_career:'Career',
  ts_note:'Every completed cup goes into the <b>Hall of fame</b>. The cup saves itself.',
- sub_brk:'Bracket',
+ sub_brk:'Knockout', sub_class:'Standings',
  btn_next:'Continue', btn_resume_susp:'Resume the suspended match', btn_newcomp:'New competition', btn_abandon:'Abandon',
  sel_all:'Select all',
  warn_2:'⚠ At least 2 teams are needed.',
  ko_q:'Quarterfinals', ko_s:'Semifinals', ko_f:'Final',
  tt_done:'CHAMPIONS: {0}!', tt_run:'{0} — {1} teams',
- phase_grp:'Group stage', phase_ar:'League, home and away', phase_sa:'League, single round', youlead:' — you manage {0}',
+ phase_grp:'Group stage', phase_ar:'League, home and away', phase_sa:'League, single round',
  tblh:['','Pts','P','W','D','L','GF','GA','GD'],
  nogoals:'No goals yet', day_n:'Matchday {0}', seed_n:'#{0}',
  toplay_p:'(to play)', leg1:'(1st leg)', leg2:'(2nd leg)', leg2tp:'(2nd leg, to play)',
@@ -2247,8 +2294,14 @@ function tourChampionName(){
 var HIST=[];
 try{const s=localStorage.getItem('soccercard_history_v1');if(s)HIST=JSON.parse(s);}catch(e){}
 function saveHist(){try{localStorage.setItem('soccercard_history_v1',JSON.stringify(HIST));}catch(e){}}
+(function(){ // PULIZIA UNA-TANTUM dei doppioni (bug visto da Enrico il 09/08: il rientro in una coppa MP conclusa la ri-archiviava)
+  const before=HIST.length;
+  HIST=HIST.filter((r,i,a)=>{const p=a[i-1];return !(p&&p.name===r.name&&p.date===r.date&&p.winner===r.winner&&p.second===r.second&&p.tipo===r.tipo);});
+  if(HIST.length!==before)saveHist();
+})();
 function archiveTour(){
   TOUR.archived=true;
+  if(TOUR.mp&&HIST.some(r=>r.code===TOUR.mp.code&&r.name===(TOUR.name||T.default_tour))){saveTour();return;} // GIÀ incisa: il rientro ricostruisce la coppa con archived:false, ma il trofeo non si incide due volte
   let wT,sT;
   if(TOUR.type==='cup'){
     const f=TOUR.ko.rounds[TOUR.ko.rounds.length-1].ties[0];const w=tieWinner(f);
@@ -2261,9 +2314,10 @@ function archiveTour(){
   const rec={date:new Date().toLocaleDateString(LANG==='it'?'it-IT':'en-GB'),name:TOUR.name||T.default_tour,tipo:TOUR.type==='cup'?(TOUR.mp?T.tipo_cupmp:T.tipo_cup):T.tipo_league,
     era:TOUR.era?eraLbl(TOUR.era):'',
     winner:wT.name,winnerClub:wT.club||wT.name,second:sT?sT.name:'',capo,teams:TOUR.teams.map(t=>t.name)};
-  if(TOUR.mp&&TOUR.type==='cup'){ // albo legato alla squadra + NOME del giocatore annotato (deciso 2026-08-03)
+  if(TOUR.mp&&TOUR.type==='cup'){ // sfida tra amici: l'albo è intestato al NOME del giocatore (Enrico 2026-08-09)
     const nm=(TOUR.mp.names)||{}, f=TOUR.ko.rounds[TOUR.ko.rounds.length-1].ties[0], w=tieWinner(f), s2=(w===f.a)?f.b:f.a;
     rec.wp=nm[TOUR.owners[w]]||'';rec.sp=nm[TOUR.owners[s2]]||''; // vuoto se la squadra era dell'IA o il nome non è stato scritto
+    rec.code=TOUR.mp.code; // firma della coppa: con la guardia sopra, mai due incisioni per la stessa
   }
   HIST.push(rec);
   saveHist();saveTour();
@@ -2285,18 +2339,32 @@ function tourRecapModal(){ // COPPA CONCLUSA: riepilogo del campione nello STESS
   if(capo.length)html+=secH(T.cz_capo)+row(escHtml(capo[0].name)+` (${escHtml(capo[0].team)})`+(capo.length>1?' +'+(capo.length-1):'')+` — ${fmt(T.h_with,capo[0].g)}`);
   askConfirmHtml(html,()=>{});
 }
-function renderHistory(){ // STILE ALBO D'ORO DELLA STAGIONE (2026-08-03, Enrico: "non inventiamo nuovi layout"):
-  // in alto la classifica generale dei club (una coppa per trofeo), sotto la cronologia — una riga per coppa
+function renderHistory(){ // BACHECA IN DUE SEZIONI (Enrico 2026-08-09): le sfide tra amici contano per NOME
+  // del giocatore, le coppe in solitaria per club; cronologia "variante A" — vincitore protagonista in oro,
+  // tutto il resto (coppa, epoca, data, 2°, capocannoniere) in una riga piccola sotto.
   const host=$('hist-body');
   if(!HIST.length){host.innerHTML='<div class="trow">'+T.h_none+'</div>';return;}
-  const COPPA='<span style="margin-right:4px;">🏆</span>';
-  const TT={};HIST.forEach(h=>{const k=h.winnerClub||h.winner;TT[k]=(TT[k]||0)+1;});
-  let out=Object.entries(TT).sort((a,b)=>(b[1]-a[1])||(a[0]<b[0]?-1:1))
-    .map(([n,k])=>`<div class="trow" style="display:flex; align-items:center;"><b style="flex:0 0 230px;">${escHtml(n)}</b><span>${COPPA.repeat(k)}</span></div>`).join('');
-  out+='<div style="border-top:2px solid rgba(255,255,255,.14); margin:8px 0;"></div>';
+  const isMp=h=>h.wp!==undefined; // wp esiste (anche vuoto) solo nei record delle coppe multiplayer
+  const secH=t=>`<div style="font-family:var(--px); font-size:.5rem; color:var(--oro); letter-spacing:1px; margin:12px 0 4px;">${t}</div>`;
+  const amici={}, solo={};
+  HIST.forEach(h=>{
+    if(isMp(h)){const k=h.wp||h.winner;amici[k]=(amici[k]||0)+1;}
+    else{const k=h.winnerClub||h.winner;solo[k]=(solo[k]||0)+1;}
+  });
+  const table=obj=>Object.entries(obj).sort((a,b)=>(b[1]-a[1])||(a[0]<b[0]?-1:1))
+    .map(([n,k])=>`<div class="trow" style="display:flex; align-items:center; justify-content:space-between; gap:10px;"><b>${escHtml(n)}</b><span style="text-align:right; letter-spacing:2px;">${'🏆'.repeat(k)}</span></div>`).join('');
+  let out='';
+  if(Object.keys(amici).length)out+=secH(T.hist_amici)+table(amici);
+  if(Object.keys(solo).length)out+=secH(T.hist_solo)+table(solo);
+  out+='<div style="border-top:2px solid rgba(255,255,255,.14); margin:12px 0;"></div>';
   out+=HIST.slice().reverse().map(h=>{
-    const capo=(h.capo&&h.capo.length)?` · ⚽ ${escHtml(h.capo[0].name)}${h.capo.length>1?' +'+(h.capo.length-1):''} (${h.capo[0].g})`:'';
-    return `<div class="trow" style="opacity:.9;">${h.date} — <b>${escHtml(h.name)}</b>${h.era?' ('+h.era+')':''} — ${COPPA}<b style="color:var(--oro);">${escHtml(h.winner)}</b>${h.wp?' <span style="color:var(--oro);">('+escHtml(h.wp)+')</span>':''}${h.second?` · ${T.h_second}: ${escHtml(h.second)}${h.sp?' ('+escHtml(h.sp)+')':''}`:''}${capo}</div>`;
+    const mp=isMp(h);
+    const big=mp?(h.wp||h.winner):h.winner;
+    const sub=mp?h.winner:T.hist_solo_tag;
+    const sec=h.second?` · ${T.h_second}: ${escHtml(mp?(h.sp||h.second):h.second)}`:'';
+    const capo=(h.capo&&h.capo.length)?` · ⚽ ${escHtml(h.capo[0].name)}${h.capo.length>1?' +'+(h.capo.length-1):''} ${h.capo[0].g}`:'';
+    return `<div class="trow" style="line-height:1.5;"><div>🏆 <b style="color:var(--oro); font-size:1.05em;">${escHtml(big)}</b> <span style="opacity:.55; font-size:.85em;">${escHtml(sub)}</span></div>`+
+      `<div style="opacity:.55; font-size:.82em; margin-top:2px;">${escHtml(h.name)}${h.era?' · '+h.era:''} · ${h.date}${sec}${capo}</div></div>`;
   }).join('');
   host.innerHTML=out;
 }
@@ -2354,83 +2422,41 @@ function bracketHtml(){ // il tabellone come stringa: pannello del hub unificato
         la:fmt(T.seed_gn,p[0][1]+1,grpLetter(p[0][0])),lb:fmt(T.seed_gn,p[1][1]+1,grpLetter(p[1][0]))}));
       note=fmt(T.brk_note_g,q/nG);
     }
+    // anteprima in STILE RISULTATI (Enrico 2026-08-09: niente schede, righe .rrow come il resto)
     let h=`<div class="brk-note">${note}</div>`;
-    h+=`<div class="bracket"><div class="bcol"><div class="bcol-h">${names[0]}${T.brk_prov}</div><div class="bcol-body">`;
+    h+=`<div class="trow gday">${names[0]}${T.brk_prov}</div>`;
     pairs.forEach(p=>{
-      const A=p.A, B=p.B;
-      h+=`<div class="btie">`+
-         `<div class="bteam${A?'':' tbd'}"><span class="bnm"${A&&tourMine(A.i)?' style="color:var(--oro)"':''}>${A?A.name:'—'}</span><span class="bsc">${p.la}</span></div>`+
-         `<div class="bteam${B?'':' tbd'}"><span class="bnm"${B&&tourMine(B.i)?' style="color:var(--oro)"':''}>${B?B.name:'—'}</span><span class="bsc">${p.lb}</span></div>`+
-         `</div>`;
+      const nm=(x,l)=>x?`${escHtml(x.name)} <span class="scr-sub">(${l})</span>`:'—';
+      const you=(p.A&&tourMine(p.A.i))||(p.B&&tourMine(p.B.i));
+      h+=`<div class="rrow${you?' you':''} notplayed"><span class="rh">${nm(p.A,p.la)}</span><span class="rs">–</span><span class="ra">${nm(p.B,p.lb)}</span></div>`;
     });
-    h+=`</div></div></div>`;
     return h;
   }
-  return cupBracketSVG(); // fase a eliminazione: tabellone stile giornale, come la Euro Cup della Stagione (2026-08-03)
+  // FASI FINALI IN STILE RISULTATI (2026-08-09, richiesta esplicita di Enrico dopo il layout a schede):
+  // stesse righe .rrow dei Risultati, turno per turno, con turni futuri segnaposto e campione in fondo.
+  let h=koRowsHtml(true);
+  const rounds=TOUR.ko.rounds, fin=rounds[rounds.length-1].ties[0], champ=fin?tieWinner(fin):null;
+  if(champ!=null)h+=`<div class="trow gday" style="color:var(--oro);">🏆 ${escHtml(TOUR.teams[champ].name)} — ${T.svg_champ}</div>`;
+  return h;
 }
-function brFinalBox(){ // finale SECCA (coppa a 2): blocco semplice — gara, punteggio, campione in oro
-  const t=TOUR.ko.rounds[0].ties[0];
-  const w=t?tieWinner(t):null;
-  const gold='#e8a020', ff="'Segoe UI',system-ui,sans-serif";
-  const nm=i=>`<span style="${tourMine(i)?'color:var(--oro);':''}">${escHtml(TOUR.teams[i].name)}</span>`;
-  let h=`<div class="btie" style="padding:12px 14px; display:flex; flex-direction:column; gap:6px; align-items:flex-start;">`;
-  h+=`<div style="font-family:${ff}; font-size:.95rem; color:#e8eef7;">${nm(t.a)} - ${nm(t.b)}</div>`;
-  if(t.l1.played)h+=`<div style="font-family:${ff}; font-size:.95rem; color:#c8d0dc;">${T.svg_fin} <b style="color:#fff;">${t.l1.gh} - ${t.l1.ga}</b>${(t.pen!=null&&t.penScore)?` (${t.penScore[0]}-${t.penScore[1]} ${T.dcr})`:''}</div>`;
-  if(w!=null){
-    h+=`<div style="font-family:${ff}; font-size:1.05rem; font-weight:600; color:${gold};">${nm(w)}</div>`;
-    h+=`<div style="font-family:var(--px); font-size:.5rem; color:${gold}; letter-spacing:1px;">${T.svg_champ}</div>`;
-  }
-  return h+`</div>`;
-}
-function cupBracketSVG(){ // TABELLONE stile giornale come euroBracketSVG (immagine-guida di Enrico, 2026-08-03): nomi grandi, gol "and · rit" a destra, linee, campione in fondo
-  const q=TOUR.koQual, rounds=TOUR.ko.rounds, nR=rounds.length;
-  const head=`<div class="trow gday">${T.svg_brk}</div>`;
-  if(nR===1)return head+brFinalBox(); // finale secca: niente albero da disegnare
-  const gold='#e8a020', ln='#c8d0dc', wh='#f2f2f2', ff="'Segoe UI',system-ui,sans-serif";
-  const W=nR===3?960:700;
-  const X=nR===3?[8,300,590]:[8,282];   // colonna nomi per turno
-  const SC=nR===3?[284,552]:[240];      // gol (and · rit) allineati a destra
-  const FX=nR===3?756:468, FZ=nR===3?772:498; // graffa e testi della finale
-  const TX=(x,y,txt,c,fs,bold,anchor)=>`<text x="${x}" y="${y}" fill="${c}" font-size="${fs||14}" font-family="${ff}"${bold?' font-weight="600"':''}${anchor?` text-anchor="${anchor}"`:''}>${txt}</text>`;
-  const LN=(x1,y1,x2,y2)=>`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${ln}" stroke-width="3" stroke-linecap="square"/>`;
-  const nm=i=>escHtml(TOUR.teams[i].name);
-  const col=(i,win)=>(win||tourMine(i))?gold:wh; // la TUA sempre in oro (senza stella); il vincitore oro e grassetto
-  const gg=(t,side)=>{const g1=t.l1.played?(side==='a'?t.l1.gh:t.l1.ga):null;if(t.single)return g1==null?'':String(g1);const g2=(t.l2&&t.l2.played)?(side==='a'?t.l2.ga:t.l2.gh):null;return (g1==null&&g2==null)?'':`${g1==null?'—':g1} · ${g2==null?'—':g2}`;}; // gara secca: un numero solo, niente "· —"
-  const brace=(x,y1,y2,ym)=>LN(x,y1-5,x+10,y1-5)+LN(x,y2-5,x+10,y2-5)+LN(x+10,y1-5,x+10,y2-5)+LN(x+10,ym-5,x+24,ym-5);
-  let s='';
-  // turno d'apertura: le coppie con i gol delle due gare
-  const n0=rounds[0].ties.length;
-  const yA=k=>34+k*100, yB=k=>yA(k)+36, yW=k=>(yA(k)+yB(k))/2+5;
-  rounds[0].ties.forEach((t,k)=>{
-    const w=tieWinner(t);
-    s+=TX(X[0],yA(k),nm(t.a),col(t.a,w===t.a),14,w===t.a)+TX(SC[0],yA(k),gg(t,'a'),ln,13,false,'end');
-    s+=TX(X[0],yB(k),nm(t.b),col(t.b,w===t.b),14,w===t.b)+TX(SC[0],yB(k),gg(t,'b'),ln,13,false,'end');
-    s+=brace(SC[0]+12,yA(k),yB(k),yW(k));
-    s+=TX(X[1],yW(k),w!=null?nm(w)+(t.pen!=null?' '+T.dcr_p:''):'—',w!=null?gold:ln,15,true);
+function koRowsHtml(all){ // le fasi finali come righe-risultato; all=true include i turni futuri come segnaposto
+  let h='';
+  TOUR.ko.rounds.forEach((r,ri)=>{
+    if(!all&&(ri>TOUR.ko.stage||!r.ties.length))return;
+    h+=`<div class="trow gday">${koRoundNames(TOUR.koQual)[ri]}</div>`;
+    if(!r.ties.length){h+=`<div class="rrow notplayed"><span class="rh">—</span><span class="rs">–</span><span class="ra">—</span></div>`;return;}
+    r.ties.forEach(t=>{
+      const A=TOUR.teams[t.a].name, B=TOUR.teams[t.b].name;
+      const you=(tourMine(t.a)||tourMine(t.b));
+      const row=(hn,s,an,played)=>`<div class="rrow${you?' you':''}${played?'':' notplayed'}"><span class="rh">${hn}</span><span class="rs">${s}</span><span class="ra">${an}</span></div>`;
+      h+=row(A,t.l1.played?t.l1.gh+' - '+t.l1.ga:'–',B,t.l1.played);
+      if(t.l2)h+=row(B,t.l2.played?t.l2.gh+' - '+t.l2.ga:'–',A,t.l2.played); // ritorno a campi invertiti
+      if(t.pen!=null&&t.penScore)h+=`<div class="trow" style="opacity:.7;"><i>${fmt(T.pensline,t.penScore[0],t.penScore[1])}</i></div>`;
+      const w=tieWinner(t);
+      if(w!==null)h+=`<div class="trow" style="color:var(--oro); border-bottom:none;">${fmt(T.advances,TOUR.teams[w].name)}</div>`;
+    });
   });
-  const H=yB(n0-1)+46;
-  // con i quarti: accanto ai vincitori i gol delle semifinali, poi i finalisti
-  let fy=[];
-  const fTie=rounds[nR-1].ties[0]||null;
-  if(nR===3){
-    for(let k=0;k<2;k++){
-      const t=rounds[1].ties[k], y1=yW(2*k), y2=yW(2*k+1), ym=(y1+y2)/2+5;
-      if(t){s+=TX(SC[1],y1,gg(t,'a'),ln,13,false,'end')+TX(SC[1],y2,gg(t,'b'),ln,13,false,'end');}
-      s+=brace(SC[1]+12,y1,y2,ym);
-      const w=t?tieWinner(t):null;
-      s+=TX(X[2],ym,w!=null?nm(w)+(t&&t.pen!=null?' '+T.dcr_p:''):'—',w!=null?gold:ln,15,true);
-      fy.push(ym);
-    }
-  }else fy=[yW(0),yW(1)];
-  // FINALE: graffa tra i due finalisti, esito e campione a destra
-  const ym=(fy[0]+fy[1])/2;
-  s+=brace(FX,fy[0],fy[1],ym);
-  const champ=fTie?tieWinner(fTie):null;
-  const fs2=(fTie&&fTie.l1.played)?` ${fTie.l1.gh}-${fTie.l1.ga}${fTie.pen!=null?' '+T.dcr_p:''}`:'';
-  s+=TX(FZ,ym-11,T.svg_fin+fs2,ln,13);
-  s+=TX(FZ,ym+11,champ!=null?nm(champ):'—',champ!=null?gold:ln,15,true);
-  if(champ!=null)s+=TX(FZ,ym+33,T.svg_champ,gold,13);
-  return head+`<svg viewBox="0 0 ${W} ${Math.max(H,210)}" style="width:100%;" xmlns="http://www.w3.org/2000/svg">${s}</svg>`;
+  return h;
 }
 
 function renderTour(){
@@ -2442,22 +2468,25 @@ function renderTour(){
   $('tour-title').textContent=done?fmt(T.tt_done,tourChampionName()):fmt(T.tt_run,TOUR.name||T.default_tour,TOUR.teams.length);
   const phase=(TOUR.type==='cup')?(TOUR.phase==='ko'?koRoundNames(TOUR.koQual)[TOUR.ko.stage]:T.phase_grp):(TOUR.double?T.phase_ar:T.phase_sa); // nome del turno ricalcolato (segue la lingua, non quello salvato)
   const eraL=TOUR.era?' · '+eraLbl(TOUR.era):'';
-  $('tour-status').textContent=`${phase}${eraL}${TOUR.mp?'':fmt(T.youlead,TOUR.teams[TOUR.user].name)}`;
-  // HUB IN STILE STAGIONE (uniformato 2026-08-03, chiesto da Enrico): classifica protagonista,
-  // sotto i sottotab arancioni Risultati / Marcatori / Tabellone — tutto in un pannello che scorre
-  if(currentTourTab==='class'||(currentTourTab==='brk'&&TOUR.type!=='cup'))currentTourTab='ris';
+  $('tour-status').textContent=`${phase}${eraL}`; // via "— tu guidi X" (Enrico 2026-08-09: non serve, la tua squadra è già in oro ovunque)
+  // SCHEDE IN ALTO, UNA PAGINA ALLA VOLTA (Enrico dal testing iPhone 2026-08-09: classifica sempre-in-testa
+  // + sottotab in fondo non si navigava). Quattro schede: Classifica / Risultati / Marcatori / Fasi finali.
+  if(currentTourTab==='brk'&&TOUR.type!=='cup')currentTourTab='class';
+  if(['class','ris','marc','brk'].indexOf(currentTourTab)<0)currentTourTab='class';
   const nG=TOUR.nG||1;
-  let hub='';
-  for(let k=0;k<nG;k++){ // una classifica per girone (girone unico: una sola, senza intestazione)
-    const st=tourStandings(nG>1?k:undefined);
-    if(nG>1)hub+=`<div class="trow gday">${fmt(T.grp_h,grpLetter(k))}</div>`;
-    hub+=`<table class="ttab"><tr><th class="tn">${T.tblh[0]}</th>${T.tblh.slice(1).map(x=>`<th>${x}</th>`).join('')}</tr>`+
-      st.map(s=>`<tr class="${tourMine(s.i)?'me':''}"><td class="tn">${s.name}</td><td><b>${s.Pt}</b></td><td>${s.P}</td><td>${s.V}</td><td>${s.N}</td><td>${s.S}</td><td>${s.GF}</td><td>${s.GS}</td><td>${s.GF-s.GS}</td></tr>`).join('')+`</table>`;
-  }
-  hub+=`<div class="subtabs"><button class="subtab${currentTourTab==='ris'?' active':''}" data-v="ris">${T.sub_ris}</button>`+
+  let hub=`<div class="subtabs" style="margin:2px 0 12px; padding-top:0; border-top:none;">`+
+       `<button class="subtab${currentTourTab==='class'?' active':''}" data-v="class">${T.sub_class}</button>`+
+       `<button class="subtab${currentTourTab==='ris'?' active':''}" data-v="ris">${T.sub_ris}</button>`+
        `<button class="subtab${currentTourTab==='marc'?' active':''}" data-v="marc">${T.sub_marc}</button>`+
        (TOUR.type==='cup'?`<button class="subtab${currentTourTab==='brk'?' active':''}" data-v="brk">${T.sub_brk}</button>`:'')+`</div>`;
-  if(currentTourTab==='marc'){
+  if(currentTourTab==='class'){
+    for(let k=0;k<nG;k++){ // una classifica per girone (girone unico: una sola, senza intestazione)
+      const st=tourStandings(nG>1?k:undefined);
+      if(nG>1)hub+=`<div class="trow gday">${fmt(T.grp_h,grpLetter(k))}</div>`;
+      hub+=`<table class="ttab"><tr><th class="tn">${T.tblh[0]}</th>${T.tblh.slice(1).map(x=>`<th>${x}</th>`).join('')}</tr>`+
+        st.map(s=>`<tr class="${tourMine(s.i)?'me':''}"><td class="tn">${s.name}</td><td><b>${s.Pt}</b></td><td>${s.P}</td><td>${s.V}</td><td>${s.N}</td><td>${s.S}</td><td>${s.GF}</td><td>${s.GS}</td><td>${s.GF-s.GS}</td></tr>`).join('')+`</table>`;
+    }
+  }else if(currentTourTab==='marc'){
     // marcatori: gol + nome, con (squadra, n.maglia) accanto al nome
     const sc=Object.entries(TOUR.scorers).map(([k,g])=>{const p=k.split('|');return {team:p[0],name:p[1],num:p[2],g};}).sort((a,b)=>b.g-a.g).slice(0,10);
     hub+=sc.length?sc.map(s=>`<div class="scr-row"><span class="scr-g">${s.g}</span><span class="scr-n">${s.name}<span class="scr-sub">(${s.team}, n.${s.num})</span></span></div>`).join('')+'<div class="trow" style="opacity:.55; font-size:.5rem; text-align:center;">'+T.top10+'</div>':'<div class="trow">'+T.nogoals+'</div>';
@@ -2472,27 +2501,12 @@ function renderTour(){
       const you=(tourMine(mt.h)||tourMine(mt.a));
       ris+=`<div class="rrow${you?' you':''}${mt.played?'':' notplayed'}"><span class="rh">${TOUR.teams[mt.h].name}</span><span class="rs">${mt.played?mt.gh+' - '+mt.ga:'–'}</span><span class="ra">${TOUR.teams[mt.a].name}</span></div>`;
     });
-    if(TOUR.type==='cup'&&TOUR.ko){
-      TOUR.ko.rounds.forEach((r,ri)=>{
-        if(ri>TOUR.ko.stage||!r.ties.length)return;
-        ris+=`<div class="trow gday">${koRoundNames(TOUR.koQual)[ri]}</div>`;
-        r.ties.forEach(t=>{
-          const A=TOUR.teams[t.a].name, B=TOUR.teams[t.b].name;
-          const you=(tourMine(t.a)||tourMine(t.b));
-          const row=(h,s,a,played)=>`<div class="rrow${you?' you':''}${played?'':' notplayed'}"><span class="rh">${h}</span><span class="rs">${s}</span><span class="ra">${a}</span></div>`;
-          ris+=row(A,t.l1.played?t.l1.gh+' - '+t.l1.ga:'–',B,t.l1.played);
-          if(t.l2)ris+=row(B,t.l2.played?t.l2.gh+' - '+t.l2.ga:'–',A,t.l2.played); // ritorno a campi invertiti, come in Euro
-          if(t.pen!=null&&t.penScore)ris+=`<div class="trow" style="opacity:.7;"><i>${fmt(T.pensline,t.penScore[0],t.penScore[1])}</i></div>`;
-          const w=tieWinner(t);
-          if(w!==null)ris+=`<div class="trow" style="color:var(--oro); border-bottom:none;">${fmt(T.advances,TOUR.teams[w].name)}</div>`;
-        });
-      });
-    }
+    if(TOUR.type==='cup'&&TOUR.ko)ris+=koRowsHtml(false); // stesse righe della scheda Fasi finali (senza turni futuri)
     hub+=ris;
   }
   const tv=$('tour-view');
   tv.innerHTML=hub;
-  tv.querySelectorAll('.subtab').forEach(b=>b.onclick=()=>{currentTourTab=b.dataset.v;renderTour();});
+  tv.querySelectorAll('.subtab').forEach(b=>b.onclick=()=>{currentTourTab=b.dataset.v;renderTour();$('tour-view').scrollTop=0;});
   // a torneo finito: via "Prosegui" e "Annulla", compare "Nuova competizione"
   $('tour-play').style.display=done?'none':'';
   $('tour-play').textContent=TOUR.liveG?T.btn_resume_susp:T.btn_next; // partita congelata: il pulsante lo dice chiaro (nota UI sessione 2)
@@ -2501,7 +2515,7 @@ function renderTour(){
   $('tour-new').style.display=done?'':'none';
   if(TOUR.mp)mpcHubButtons(); // coppa multiplayer: il pulsante verde racconta lo stato (gioca / sfida diretta / attendi l'amico)
 }
-var currentTourTab='ris';
+var currentTourTab='class';
 function injectPaper(){
   const oggi=new Date().toLocaleDateString('it-IT',{month:'long',year:'numeric'});
   const htmlFor=id=>`<div class="pb-head">MATCH<span class="tred">SWEEP!</span></div>
@@ -2572,7 +2586,7 @@ function renderAll(lastLaid){
   $('sb-me-name').textContent=G.names.me;
   $('sb-ai-name').textContent=G.names.ai;
   $('sb-score').textContent=`${G.score.me} - ${G.score.ai}`;
-  const minute=(G.half-1)*45+Math.min(45,Math.max(0,Math.ceil(G.playsInHalf/36*45)));
+  const minute=G.half<=2?(G.half-1)*45+Math.min(45,Math.max(0,Math.ceil(G.playsInHalf/36*45))):90+Math.min(30,Math.max(0,Math.ceil(G.playsInHalf/36*30))); // supplementari: 90'→120', mai 128'
   const fase=G.shootMode?T.ph_pens:(G.half<=2?T['ph_half'+G.half]:T.ph_extra)+' — '+minute+"'";
   $('sb-info').innerHTML=`${fase}<br>${fmt(T.deckinfo,G.deck.length)}`;
   // avversario (dorsi con stemma)
@@ -2583,13 +2597,17 @@ function renderAll(lastLaid){
   const zt=$('zone-table');zt.querySelectorAll('.card').forEach(e=>e.remove());
   // tavolo sempre neutro: sul tavolo c'è l'azione, non il calciatore
   G.table.forEach((c,i)=>{
+    if(G.pens&&G.pens.pend&&i===0&&G.turn==='me'){ // rigori: il tiro dell'avversario resta COPERTO finché non ti tuffi
+      zt.insertAdjacentHTML('beforeend',`<div class="card back"><div class="crest-mini">?</div></div>`);
+      return;
+    }
     const hl=(lastLaid&&i===G.table.length-1)?'just-played':'';
     zt.insertAdjacentHTML('beforeend',cardHTML(c,hl));
   });
   // mano
   const zm=$('zone-me');zm.querySelectorAll('.card').forEach(e=>e.remove());
   G.hands.me.forEach((c,i)=>{
-    const can=captureOptions(c,G.table).length>0;
+    const can=!G.pens&&captureOptions(c,G.table).length>0; // ai rigori niente evidenza-presa
     const pname=c.v===1?null:G.players.me[c.v-2];
     zm.insertAdjacentHTML('beforeend',cardHTML(c,'playable'+(can?' can-take':''),pname,true));
     zm.lastElementChild.onclick=()=>onMyCard(i);
@@ -2605,6 +2623,15 @@ function addLog(txt){
 function logMove(r){
   const who=r.side==='me'?G.names.me:G.names.ai;
   let txt;
+  if(r.pen){ // cronaca dei rigori: il tiro non svela la carta, il tuffo racconta l'esito
+    if(r.shot)txt=fmt(T.log_pen_shot,who);
+    else{
+      const shooter=r.shooter==='me'?G.names.me:G.names.ai;
+      const P=G.pens||{g:{me:0,ai:0}};
+      txt=r.saved?fmt(T.log_pen_save,who,shooter):fmt(T.log_pen_goal,shooter,P.g.me,P.g.ai);
+    }
+    addLog(txt);return;
+  }
   if(r.laid)txt=fmt(T.log_lay,who,r.card.v);
   else if(r.card.v===1){
     const kind=r.card.kind==='rigore'?T.ace_pen:T.ace_fk;
@@ -2631,6 +2658,10 @@ async function showGoal(r){
 
 function onMyCard(i){
   if(busy||G.turn!=='me')return;
+  if(G.pens){ // rigori: la carta è l'angolo scelto — niente prese, niente domande; in oltranza decide la sorte da sola
+    if(G.pens.t.me>=5&&G.pens.t.ai>=5)return;
+    doPlay('me',i,0);return;
+  }
   const card=G.hands.me[i];
   const opts=captureOptions(card,G.table);
   // Le carte sul tavolo sono NEUTRE (solo il numero conta): due prese che catturano lo
@@ -2670,20 +2701,25 @@ async function revealAiCard(c){ // la carta dell'avversario scivola SUL tavolo, 
 async function doPlay(side,handIdx,optIdx){
   busy=true;
   if(G.mp&&side==='me')mpSendMove(handIdx,optIdx); // multiplayer: la mia mossa parte subito verso la stanza
-  if(side==='ai')await revealAiCard(G.hands.ai[handIdx]);
+  if(side==='ai'&&!(G.pens&&!G.pens.pend))await revealAiCard(G.hands.ai[handIdx]); // il TIRO dell'IA ai rigori resta coperto
   const r=playCard(G,side,handIdx,optIdx);
   liveSave(); // partita congelata: ogni mossa in cassaforte (solo carriera/coppa)
   renderAll(r.laid);
   logMove(r);
   if(r.newRound)addLog(`<span class="evt">${T.log_newround}</span>`);
-  if(r.scopa)await showGoal(r);
+  if(r.scopa&&!G.pens)await showGoal(r); // il gol dei rigori si festeggia in cronaca, non con l'overlay dei marcatori
+  if(G.pens&&r.dive&&!r.endOfHalf&&G.pens.t.me===5&&G.pens.t.ai===5&&!G.pens.oltre){G.pens.oltre=true;showFieldNote(T.fn_sudden,T.fn_sudden2);} // 5-5: si va a oltranza
   if(r.endOfHalf){endHalf();return;}
   if(G.turn==='ai'){
     if(G.mp){busy=false;mpPump();return;} // multiplayer: niente IA, si aspetta la mossa vera dell'avversario
-    await sleep(500); // pausa "di pensiero" ridotta: il ritmo ora lo dà la carta mostrata
+    await sleep(G.pens?900:500); // ai rigori un attimo di respiro in più
     const ch=aiChoose(G,'ai');
     await doPlay('ai',ch.handIdx,ch.optIdx);
-  }else busy=false;
+  }else{
+    busy=false;
+    if(G.pens&&G.pens.t.me>=5&&G.pens.t.ai>=5&&!G.mp){busy=true;await sleep(1100);await doPlay('me',0,0);} // oltranza in solitaria: la sorte gioca da sola
+    else if(G.pens&&G.pens.t.me>=5&&G.pens.t.ai>=5&&G.mp&&G.turn==='me'){busy=true;await sleep(1100);await doPlay('me',0,0);} // in MP ogni client cala da sé la carta della sorte
+  }
 }
 
 function marcatoriHTML(){ // marcatori incolonnati sotto la propria squadra (stile TV, 2026-08-03): niente più "— Squadra" ripetuto
@@ -2814,7 +2850,7 @@ function endHalf(){
       G.shootWinner=dMe>dAi?'me':'ai';
       G.scorers.length=G.shootScorersLen; // i rigori non contano per il capocannoniere
       G.score={...G.shootBase};           // il risultato ufficiale resta quello del campo
-      G.shootMode=false;
+      G.shootMode=false;G.pens=null;
     }else if((G.tour&&G.tour.mustDecide&&((G.tour.prior||0)+G.score.me-G.score.ai)===0)||(G.career&&G.career.mustDecide&&((G.career.prior||0)+G.score.me-G.score.ai)===0)){
       if(!G.extraPlayed){G.extraPlayed=true;beginHalf(G.half+1);return;} // 1 tempo supplementare
       beginShootout();return;                                            // poi calci di rigore
@@ -2948,7 +2984,7 @@ const RULES=[
    <h5>Supplementari</h5>
    <p>Nelle sfide da dentro-o-fuori (fase finale della Coppa, semifinali e finale della Euro Cup), se si finisce pari si gioca <b>un tempo supplementare</b> (una smazzata intera).</p>
    <h5>Calci di rigore</h5>
-   <p>Se resta ancora pari si va ai <b>rigori</b>: 10 carte a testa da un mazzo nuovo su tavolo vuoto, si cala una carta a turno e ogni scopa è un rigore trasformato; se la serie finisce pari, si ribatte. Il risultato ufficiale resta quello del campo (indicato con "dcr") e i gol dei rigori non contano per il capocannoniere.</p>`}
+   <p>Se resta ancora pari si va ai <b>rigori</b>, come nel calcio vero: <b>5 a testa</b>, alternati, con 10 carte a testa da un mazzo nuovo. Il tiratore cala una carta <b>coperta</b> (sceglie l'angolo), il portiere risponde con una sua carta (il tuffo): <b>stesso valore = parata</b>, qualsiasi altro = gol. Le carte escono dal gioco e la serie si interrompe appena è decisa. Dal sesto rigore si va a <b>oltranza</b> e decide la sorte: carte pescate a caso (nuove 10 a testa se finiscono). Il risultato ufficiale resta quello del campo (indicato con "dcr") e i gol dei rigori non contano per il capocannoniere.</p>`}
 ];
 I18N.it.rules=RULES; // il regolamento italiano resta la copia master qui sopra
 I18N.en.rules=[
@@ -3009,7 +3045,7 @@ I18N.en.rules=[
    <h5>Extra time</h5>
    <p>In do-or-die matches (Cup knockout stage, Euro Cup semifinals and final), if the score is level you play <b>one period of extra time</b> (a full deal).</p>
    <h5>Penalty shootout</h5>
-   <p>If it is still level you go to <b>penalties</b>: 10 cards each from a fresh deck on an empty table, one card per turn, and every sweep is a converted penalty; if the round ends level, another one is played. The official result remains the one from the pitch (marked "pens") and shootout goals do not count for the top scorer award.</p>`}
+   <p>If it is still level you go to <b>penalties</b>, just like real football: <b>5 each</b>, alternating, with 10 cards each from a fresh deck. The shooter plays a card <b>face down</b> (picking the corner), the keeper answers with one of his own (the dive): <b>same value = save</b>, anything else is a goal. Cards leave the game and the shootout stops as soon as it is decided. From the sixth kick on it is <b>sudden death</b> and fate takes over: random cards (a fresh 10 each if they run out). The official result remains the one from the pitch (marked "pens") and shootout goals do not count for the top scorer award.</p>`}
 ];
 var currentRule=0;
 function renderRules(){
@@ -3754,7 +3790,7 @@ function mpRematch(){ // RIVINCITA nella stessa stanza: stesse squadre, nuova mo
    in un lampo col motore deterministico — stesse carte, stesso punteggio, stessa carta da giocare.
    L'avversario nel frattempo NON viene buttato fuori: vede "connessione persa, attendo il rientro"
    e decide lui se aspettare o uscire (niente timeout: coerente con la filosofia senza-timer). */
-const MP_PV=2; // VERSIONE DEL PROTOCOLLO MP (2 = gironi/fasi secche del 2026-08-08): i due client DEVONO coincidere,
+const MP_PV=3; // VERSIONE DEL PROTOCOLLO MP (3 = rigori veri del 2026-08-09; 2 = gironi/fasi secche): i due client DEVONO coincidere,
 // altrimenti costruirebbero tornei/partite diverse in silenzio. Se non coincide: messaggio "ricaricate la pagina" e stop.
 function mpMark(){ // il biglietto porta una FIRMA unica del client (cid): due finestre sullo stesso PC condividono
   // la tasca (localStorage) e si sovrascrivono il biglietto a vicenda — al rientro il ruolo si deduce
@@ -3916,7 +3952,7 @@ function openQuitModal(msg,suspLbl){
 function doForfeit(){ // partita persa 0-3 a tavolino: registrata come sconfitta vera, senza marcatori
   if(!G)return;
   busy=false;pendingStart=null;
-  G.shootMode=false;
+  G.shootMode=false;G.pens=null;
   G.score={me:0,ai:3};
   G.scorers.length=0;
   G.shootResult=null;G.shootWinner=null;
@@ -4454,7 +4490,7 @@ function duelStep(G){ // replica PURA della decisione di endHalf a fine smazzata
 function duelFinishShoot(G){ // chiusura rigori come in endHalf: risultato ufficiale = campo, gol dei rigori fuori dal tabellino
   const dMe=G.score.me-G.shootBase.me, dAi=G.score.ai-G.shootBase.ai;
   G.shootResult={me:dMe,ai:dAi};G.shootWinner=dMe>dAi?'me':'ai';
-  G.scorers.length=G.shootScorersLen;G.score={...G.shootBase};G.shootMode=false;
+  G.scorers.length=G.shootScorersLen;G.score={...G.shootBase};G.shootMode=false;G.pens=null;
 }
 function mpcDuelRejoin(key,d){ // rientro a sfida in corso: init + mosse rigiocate col motore deterministico, supplementari e rigori compresi
   const init=d.init;
