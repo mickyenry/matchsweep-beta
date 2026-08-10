@@ -491,6 +491,20 @@
     /* nomi squadra lunghi nello scoreboard: puntini invece di sbordare */
     #sb-me-name, #sb-ai-name{max-width:30vw; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
   }
+  /* ===== SOLO PROTOTIPO STAGIONE (2026-08-10): recupero spazio su telefono — le 4 schede fisse
+     stanno su UNA riga (niente 2x2), margini asciutti, area contenuto più alta ===== */
+  #career-view .subtabs{margin:0 0 8px !important; gap:5px;}
+  #career-view .subtabs .subtab{flex:1 1 0 !important; min-width:0; white-space:nowrap; letter-spacing:0; overflow:hidden;}
+  .nsig{display:none;} /* sui campionati: nome intero su PC/iPad, SIGLA su telefono */
+  @media (max-width:480px){
+    #career-view .subtabs .subtab{font-size:.38rem !important; padding:8px 2px !important;}
+    #scr-career{padding-top:clamp(64px,9vh,84px) !important;} /* la testata sopra l'hub può salire un po' */
+    #career-status{margin-bottom:2px !important;}
+    #career-view.tview, #career-view{height:54vh !important; margin-top:8px !important;}
+    #career-tabs{grid-template-columns:repeat(4,1fr); gap:5px; margin-top:8px;} /* UNA riga: con le sigle ci sta (l'inline repeat(5) della fase Euro vince comunque) */
+    #career-tabs .b90{padding:9px 2px !important; font-size:.44rem !important;}
+    #career-tabs .nfull{display:none;} #career-tabs .nsig{display:inline;}
+  }
 </style>
 </head>
 <body>
@@ -3537,7 +3551,8 @@ function renderCareerHub(){
   if(euroOn)countries.push('__euro');
   $('career-tabs').style.gridTemplateColumns=euroOn?'repeat(5,1fr)':'';
   if(!careerTab||(careerTab==='__euro'&&!euroOn)||(careerTab!=='__euro'&&!c.leagues[careerTab]))careerTab=euroOn?'__euro':c.userLeague;
-  $('career-tabs').innerHTML=countries.map(co=>`<button class="b90 c-gray ttag${co===careerTab?' active':''}" data-co="${escHtml(co)}">${co==='__euro'?'EURO CUP':escHtml(coLbl(co))}</button>`).join('');
+  const natSig=co=>({Italia:'ITA',Inghilterra:'ENG',Spagna:'ESP',Germania:'GER'})[co]||co.slice(0,3).toUpperCase();
+  $('career-tabs').innerHTML=countries.map(co=>`<button class="b90 c-gray ttag${co===careerTab?' active':''}" data-co="${escHtml(co)}"><span class="nfull">${co==='__euro'?'EURO CUP':escHtml(coLbl(co))}</span><span class="nsig">${co==='__euro'?'EURO':natSig(co)}</span></button>`).join('');
   $('career-tabs').querySelectorAll('button').forEach(b=>b.onclick=()=>{careerTab=b.dataset.co;renderCareerHub();});
   renderCareerView();
   const pb=$('career-play');pb.style.display='';
