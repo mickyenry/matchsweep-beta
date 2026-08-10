@@ -491,6 +491,20 @@
     /* nomi squadra lunghi nello scoreboard: puntini invece di sbordare */
     #sb-me-name, #sb-ai-name{max-width:30vw; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
   }
+  /* ===== HUB STAGIONE (2026-08-10, collaudato da Enrico su iPad e iPhone SE): barra schede FISSA fuori
+     dallo scroll; su telefono tutto su UNA riga (sigle per i campionati), margini asciutti, contenuto più alto ===== */
+  #career-subtabs .subtabs{margin:6px 0 0 !important; gap:5px;}
+  #career-subtabs .subtab{flex:1 1 0 !important; min-width:0; white-space:nowrap; letter-spacing:0; overflow:hidden;}
+  .nsig{display:none;} /* sui campionati: nome intero su PC/iPad, SIGLA su telefono */
+  @media (max-width:480px){
+    #career-subtabs .subtab{font-size:.37rem !important; padding:8px 1px !important;}
+    #scr-career{padding-top:clamp(64px,9vh,84px) !important;} /* la testata sopra l'hub può salire un po' */
+    #career-status{margin-bottom:2px !important;}
+    #career-view.tview, #career-view{height:54vh !important; margin-top:8px !important;}
+    #career-tabs{grid-template-columns:repeat(4,1fr); gap:5px; margin-top:8px;} /* UNA riga: con le sigle ci sta (l'inline repeat(5) della fase Euro vince comunque) */
+    #career-tabs .b90{padding:9px 2px !important; font-size:.44rem !important;}
+    #career-tabs .nfull{display:none;} #career-tabs .nsig{display:inline;}
+  }
 </style>
 </head>
 <body>
@@ -951,6 +965,7 @@
     <div class="phead" id="career-title">📅 Carriera</div>
     <div id="career-status" class="sub" style="text-align:center; margin-bottom:4px; padding:0 44px;"></div>
     <div class="tour-tabs" id="career-tabs"></div>
+    <div id="career-subtabs"></div><!-- schede contenuto FISSE: fuori dall'area che scorre, non si muovono mai (Enrico 2026-08-10) -->
     <div class="tview" id="career-view"></div>
     <div class="btn-row2">
       <button class="b90 c-green wide" id="career-play" style="display:none;" onclick="UI.careerPlay()">▶ Gioca</button>
@@ -2574,7 +2589,7 @@ var histFrom=null; // da quale schermata si è aperto l'Albo d'oro: il ◄ ripor
 function injectPaper(){
   const oggi=new Date().toLocaleDateString('it-IT',{month:'long',year:'numeric'});
   const htmlFor=id=>`<div class="pb-head">MATCH<span class="tred">SWEEP!</span></div>
-    <div class="pb-sub">★ Summer Edition v. 1.1 · 10 ago ★</div><!-- NUMERO DI BUILD VISIBILE (Enrico 2026-08-10): aggiornarlo A OGNI pubblicazione — serve ai tester per capire se la cache gli serve una versione vecchia -->
+    <div class="pb-sub">★ Summer Edition v. 1.2 · 10 ago ★</div><!-- NUMERO DI BUILD VISIBILE: aggiornarlo A OGNI pubblicazione (v1.2 = nuovo hub Stagione) -->
     <div class="pb-rule"></div>
     ${id==='scr-menu'?`<div class="pb-headline" data-i18n="headline">Clamoroso al Cibali!</div>`:''}
     <div class="pb-cols"><div class="pb-col"></div><div class="pb-col"></div><div class="pb-col"></div><div class="pb-col"></div></div>
@@ -3112,7 +3127,7 @@ function escHtml(s){return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt
 var CAREERS={};
 try{const s=localStorage.getItem('soccercard_careers');if(s)CAREERS=JSON.parse(s)||{};}catch(e){}
 function saveCareers(){try{localStorage.setItem('soccercard_careers',JSON.stringify(CAREERS));}catch(e){}}
-var CAREER=null, careerTab=null, careerView='ris';
+var CAREER=null, careerTab=null, careerView='class'; // HUB STAGIONE 2026-08-10: careerTab = COMPETIZIONE in alto (nazione o '__euro'), careerView = scheda contenuto fissa (class|ris|marc|albo)
 
 function buildCareer(name,era,clubIdx,players){
   const byC=teamsByCountry(), leagues={};
@@ -3198,7 +3213,7 @@ function careerFinalizeSeason(){ // fine CAMPIONATI: bacheca scudetti/capocannon
   html+=secH(T.fz_scud)+Object.entries(chp).map(([co,n])=>row(coLbl(co),escHtml(n))).join('');
   html+=secH(T.fz_qual)+Object.entries(qByCo).map(([co,ns])=>row(coLbl(co),ns.map(escHtml).join(T.and_word))).join('');
   if(CAREER.euro){
-    CAREER.euroPhase=true;careerTab='__euro';careerView='ris';
+    CAREER.euroPhase=true;careerTab='__euro';careerView='class';
     CAREER.saved=Date.now();CAREERS[CAREER.name]=CAREER;saveCareers();
     renderCareerHub();show('scr-career');
     html+=`<div style="font-family:var(--px); font-size:.58rem; color:#7fd486; letter-spacing:1px; line-height:2; margin-top:16px;">${fmt(T.fz_now,s+1)}</div>`;
@@ -3222,7 +3237,7 @@ function careerNewSeason(){ // chiusura stagione: coppa e Pallone d'oro in bache
   CAREER.season=s+1;CAREER.matchday=1;
   Object.values(CAREER.leagues).forEach(L=>{L.schedule=genCalendar(L.teams.length,true);L.scorers={};});
   CAREER.saved=Date.now();CAREERS[CAREER.name]=CAREER;saveCareers();
-  careerTab=CAREER.userLeague;careerView='ris';renderCareerHub();show('scr-career');
+  careerTab=CAREER.userLeague;careerView='class';renderCareerHub();show('scr-career');
   if(sn){renderSeasonNews(sn);show('scr-news');} // la prima pagina: campione d'Europa + Pallone d'oro; Continua → hub
   else askConfirmHtml(`<div style="font-family:var(--px); font-size:.68rem; letter-spacing:1px;">${fmt(T.ns_head,s)}</div><div style="margin-top:8px; opacity:.85; font-size:.98rem;">${T.ns_all}</div><div style="font-family:var(--px); font-size:.58rem; color:#7fd486; letter-spacing:1px; margin-top:14px;">${fmt(T.ns_next,s+1)}</div>`,()=>{}); // carriere senza coppa (pre-Fase 4)
 }
@@ -3471,30 +3486,33 @@ function renderEuroView(){ // scheda EURO: gironi finché si giocano, poi TABELL
     const sc=careerScorers(E,10);
     return sc.length? sc.map(s=>`<div class="scr-row"><span class="scr-g">${s.g}</span><span class="scr-n">${escHtml(s.name)}<span class="scr-sub">(${escHtml(s.team)}, n.${s.num})</span></span></div>`).join('')+'<div class="trow" style="opacity:.55; font-size:.5rem; text-align:center;">'+T.top10+'</div>' : '<div class="trow" style="opacity:.7;">'+T.nogoals+'</div>';
   };
-  let h='';
-  if(!ko){ // GIRONI in corso: classifiche in alto, sotto Risultati/Marcatori
-    h+=groupTables();
-    const view=careerView==='marc'?'marc':'ris';
-    h+=`<div class="subtabs"><button class="subtab${view==='ris'?' active':''}" data-v="ris">${T.sub_ris}</button><button class="subtab${view==='marc'?' active':''}" data-v="marc">${T.sub_marc}</button></div>`;
-    h+= view==='marc'?scorers():groupResults()+euroBracketHTML();
-  }else{ // ELIMINAZIONE: il tabellone prende il posto dei gironi; sotto puoi rivederli
-    h+=euroBracketSVG();
-    const view=careerView==='marc'?'marc':'gironi';
-    h+=`<div class="subtabs"><button class="subtab${view==='gironi'?' active':''}" data-v="gironi">${T.sub_gironi}</button><button class="subtab${view==='marc'?' active':''}" data-v="marc">${T.sub_marc}</button></div>`;
-    h+= view==='marc'?scorers():groupTables()+groupResults();
-  }
-  host.innerHTML=h;
-  host.querySelectorAll('.subtab').forEach(b=>b.onclick=()=>{careerView=b.dataset.v;renderEuroView();});
+  // PROTOTIPO 2: niente sottoschede interne — comanda la scheda fissa (careerView):
+  // Classifica = gironi (poi tabellone coi gironi sotto) · Risultati = partite · Marcatori = bomber della coppa
+  if(careerView==='marc')return scorers();
+  if(careerView==='ris')return groupResults()+(ko?'':euroBracketHTML());
+  return ko?(euroBracketSVG()+groupTables()):groupTables();
 }
-function renderCareerView(country){
-  if(country==='__euro'){renderEuroView();return;}
-  const L=CAREER.leagues[country], host=$('career-view');
-  const view=(careerView==='marc'||careerView==='albo')?careerView:'ris'; // la CLASSIFICA sta sempre in alto; sotto scegli Risultati, Marcatori o Albo
+function renderCareerView(){ // PROTOTIPO "PROVA 2" (2026-08-10, scelta di Enrico): campionati BLU in alto
+  // (la riga di sempre, con EURO CUP in coda quando parte) e SOTTO le schede CONTENUTO FISSE in
+  // arancione come l'hub Coppa: Classifica / Risultati / Marcatori / Albo d'oro — una pagina alla volta.
+  const host=$('career-view');
+  const cts=[['class',T.sub_class],['ris',T.sub_ris],['marc',T.sub_marc],['albo',T.sub_albo]];
+  if(!cts.some(t=>t[0]===careerView))careerView='class';
+  const bar=$('career-subtabs'); // riga FISSA, fuori dallo scroll: cambiando scheda non si muove di un pixel
+  bar.innerHTML=`<div class="subtabs" style="margin:6px 0 0; padding-top:0; border-top:none;">`+cts.map(([v,l])=>`<button class="subtab${v===careerView?' active':''}" data-v="${v}">${l}</button>`).join('')+`</div>`;
+  bar.querySelectorAll('.subtab').forEach(b=>b.onclick=()=>{careerView=b.dataset.v;renderCareerView();$('career-view').scrollTop=0;});
+  let h='';
+  const inEuro=(careerTab==='__euro');
+  const country=inEuro?CAREER.userLeague:careerTab, L=CAREER.leagues[country]||CAREER.leagues[CAREER.userLeague];
+  const view=careerView;
   const isYou=i=>country===CAREER.userLeague&&i===CAREER.userIdx;
-  const st=careerStandings(L);
-  let h=`<table class="ttab" style="table-layout:fixed;"><tr><th class="tn" style="width:32%;">${T.tblh[0]}</th>${T.tblh.slice(1).map(x=>`<th>${x}</th>`).join('')}</tr>`+
-    st.map(s=>`<tr class="${isYou(s.i)?'me':''}"><td class="tn">${s.name}</td><td><b>${s.Pt}</b></td><td>${s.P}</td><td>${s.V}</td><td>${s.N}</td><td>${s.S}</td><td>${s.GF}</td><td>${s.GS}</td><td>${s.GF-s.GS}</td></tr>`).join('')+`</table>`;
-  h+=`<div class="subtabs"><button class="subtab${view==='ris'?' active':''}" data-v="ris">${T.sub_ris}</button><button class="subtab${view==='marc'?' active':''}" data-v="marc">${T.sub_marc}</button><button class="subtab${view==='albo'?' active':''}" data-v="albo">${T.sub_albo}</button></div>`;
+  if(inEuro&&view!=='albo'){h+=renderEuroView();} // EURO CUP selezionata: stesse schede fisse, contenuti della coppa europea
+  else{
+  if(view==='class'){
+    const st=careerStandings(L);
+    h+=`<table class="ttab" style="table-layout:fixed;"><tr><th class="tn" style="width:32%;">${T.tblh[0]}</th>${T.tblh.slice(1).map(x=>`<th>${x}</th>`).join('')}</tr>`+
+      st.map(s=>`<tr class="${isYou(s.i)?'me':''}"><td class="tn">${s.name}</td><td><b>${s.Pt}</b></td><td>${s.P}</td><td>${s.V}</td><td>${s.N}</td><td>${s.S}</td><td>${s.GF}</td><td>${s.GS}</td><td>${s.GF-s.GS}</td></tr>`).join('')+`</table>`;
+  }
   if(view==='marc'){
     const sc=careerScorers(L,10); // classifica marcatori: PRIMI 10 (taglio voluto)
     h+= sc.length? sc.map(s=>`<div class="scr-row"><span class="scr-g">${s.g}</span><span class="scr-n">${s.name}<span class="scr-sub">(${s.team}, n.${s.num})</span></span></div>`).join('')+'<div class="trow" style="opacity:.55; font-size:.5rem; text-align:center;">'+T.top10+'</div>' : '<div class="trow" style="opacity:.7;">'+T.nogoals+'</div>';
@@ -3519,11 +3537,11 @@ function renderCareerView(country){
         return `<div class="trow" style="opacity:.85;">${fmt(T.season_row,s)} — ${champs.join(' · ')}${eu?` — ${COPPA} <b>${escHtml(eu.team)}</b>`:''}${bd?` — ${PALLA} <b>${escHtml(bd.name)}</b>`:''}</div>`;
       }).join('');
     }
-  }else{
+  }else if(view==='ris'){
     h+= careerResultsHTML(L,country);
   }
+  } // fine ramo campionati
   host.innerHTML=h;
-  host.querySelectorAll('.subtab').forEach(b=>b.onclick=()=>{careerView=b.dataset.v;renderCareerView(country);});
 }
 function renderCareerHub(){
   const c=CAREER;
@@ -3531,13 +3549,15 @@ function renderCareerHub(){
   const euroOn=!!c.euroPhase, E=c.euro;
   $('career-title').textContent=c.name;
   $('career-status').textContent=euroOn?fmt(T.hub_euro,c.season,E.done?T.euro_done:euroDayLabel(E.day)):fmt(T.hub_league,c.season,done?T.league_done:fmt(T.day_of,day,total));
+  // PROTOTIPO 2: in alto i CAMPIONATI (riga blu di sempre, EURO CUP in coda quando parte); le schede contenuto stanno nella vista
   const countries=Object.keys(c.leagues).sort((a,b)=>(a===c.userLeague?-1:b===c.userLeague?1:a.localeCompare(b)));
   if(euroOn)countries.push('__euro');
   $('career-tabs').style.gridTemplateColumns=euroOn?'repeat(5,1fr)':'';
   if(!careerTab||(careerTab==='__euro'&&!euroOn)||(careerTab!=='__euro'&&!c.leagues[careerTab]))careerTab=euroOn?'__euro':c.userLeague;
-  $('career-tabs').innerHTML=countries.map(co=>`<button class="b90 c-gray ttag${co===careerTab?' active':''}" data-co="${escHtml(co)}">${co==='__euro'?'EURO CUP':escHtml(coLbl(co))}</button>`).join(''); // tutte grigie: il blu (.ttag.active) segna la selezione e si sposta
+  const natSig=co=>({Italia:'ITA',Inghilterra:'ENG',Spagna:'ESP',Germania:'GER'})[co]||co.slice(0,3).toUpperCase();
+  $('career-tabs').innerHTML=countries.map(co=>`<button class="b90 c-gray ttag${co===careerTab?' active':''}" data-co="${escHtml(co)}"><span class="nfull">${co==='__euro'?'EURO CUP':escHtml(coLbl(co))}</span><span class="nsig">${co==='__euro'?'EURO':natSig(co)}</span></button>`).join('');
   $('career-tabs').querySelectorAll('button').forEach(b=>b.onclick=()=>{careerTab=b.dataset.co;renderCareerHub();});
-  renderCareerView(careerTab);
+  renderCareerView();
   const pb=$('career-play');pb.style.display='';
   const finished=euroOn?E.done:done;
   pb.textContent=euroOn?(E.done?T.btn_close_season:(euroUserSlot()>=0?fmt(T.btn_play_euro,euroDayLabel(E.day)):fmt(T.btn_proceed_euro,euroDayLabel(E.day)))):(done?T.btn_close_leagues:fmt(T.btn_play_day,day));
