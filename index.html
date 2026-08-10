@@ -374,6 +374,7 @@
   .news-sheet .pb-sub{color:#6b3d32;} /* inchiostro caldo sulla carta antica */
   .news-sheet .pb-headline{margin-top:8px; line-height:1.15;}
   .news-score{font-family:var(--px); font-size:2rem; text-align:center; color:#141414; margin:12px 0 2px;}
+  .news-score .news-dcr{display:block; font-size:.72rem; letter-spacing:1px; color:#4a4a4a; margin-top:8px;} /* il verdetto dei rigori sotto il punteggio, piccolo e su riga sua (Enrico 2026-08-10: sbordava sull'iPhone) */
   .news-sub{text-align:center; color:#5a5648; font-size:.95rem; margin-bottom:8px;}
   /* due foto da collage di redazione, leggermente storte; didascalie legate ai FATTI della partita */
   .news-photos{display:flex; gap:14px; justify-content:center; align-items:flex-start; margin:14px auto 6px; width:96%;}
@@ -2832,7 +2833,7 @@ var newsSeason=false; // true = la prima pagina è il GIORNALE DI FINE STAGIONE 
 function renderNews(story){
   newsSeason=false;$('news-menu').style.display='';
   $('news-headline').textContent=story.hl;
-  $('news-score').textContent=`${G.score.me} - ${G.score.ai}`+(G.shootResult?` (${G.shootResult.me}-${G.shootResult.ai} ${T.dcr})`:'');
+  $('news-score').innerHTML=`${G.score.me} - ${G.score.ai}`+(G.shootResult?`<span class="news-dcr">${G.shootResult.me}-${G.shootResult.ai} ${T.dcr}</span>`:''); // solo numeri interni + T.dcr: niente input utente
   $('news-sub').textContent=`${G.names.me} vs ${G.names.ai}`;
   // FOTO 1 (azione, i due omini nelle maglie della partita): didascalia = il fatto del giorno
   $('news-cap').textContent=story.cap1||'';
@@ -2860,7 +2861,7 @@ function renderNews(story){
 function renderSeasonNews(d){ // GIORNALE DI FINE STAGIONE: la coppa e il Pallone d'oro (deciso 2026-07-28, al posto del riepilogo testuale)
   newsSeason=true;G=null; // nessuna partita in corso: Continua = hub della nuova stagione
   $('news-headline').textContent=fmt(pick(d.userChamp?T.hl_seasonyou:T.hl_season),d.champ.name);
-  $('news-score').textContent=`${d.gh} - ${d.ga}`+(d.pen?` (${d.pen[0]}-${d.pen[1]} ${T.dcr})`:'');
+  $('news-score').innerHTML=`${d.gh} - ${d.ga}`+(d.pen?`<span class="news-dcr">${d.pen[0]}-${d.pen[1]} ${T.dcr}</span>`:''); // come sopra: numeri interni
   $('news-sub').textContent=`${d.na} vs ${d.nb}`;
   // FOTO 1: i due omini nelle maglie della finale; didascalia = il campione
   $('news-cap').textContent=T.cap_champ;
