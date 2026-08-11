@@ -43,8 +43,8 @@
   .rules-note{font-size:.78rem; color:#7d90d8; margin-top:16px; text-align:center; line-height:1.5;}
 
   /* ===== Sfondo: prima pagina di giornale sportivo in bianco e nero ===== */
-  #scr-menu, #scr-setup, #scr-mp, #scr-mp-pick, #scr-mpc-setup, #scr-mpc-draft, #scr-options, #scr-teams, #scr-interval, #scr-final, #scr-tour-pick, #scr-cup-list, #scr-tour-setup, #scr-tour, #scr-rules, #scr-history, #scr-saves, #scr-lang, #scr-career-list, #scr-career-new, #scr-career{background:#e9e5d8; position:relative; overflow:hidden;}
-  #scr-menu>*:not(.paper-bg), #scr-setup>*:not(.paper-bg), #scr-mp>*:not(.paper-bg), #scr-mp-pick>*:not(.paper-bg), #scr-mpc-setup>*:not(.paper-bg), #scr-mpc-draft>*:not(.paper-bg), #scr-options>*:not(.paper-bg), #scr-teams>*:not(.paper-bg),
+  #scr-menu, #scr-setup, #scr-mp, #scr-mp-pick, #scr-mpc-list, #scr-mpc-setup, #scr-mpc-draft, #scr-options, #scr-teams, #scr-interval, #scr-final, #scr-tour-pick, #scr-cup-list, #scr-tour-setup, #scr-tour, #scr-rules, #scr-history, #scr-saves, #scr-lang, #scr-career-list, #scr-career-new, #scr-career{background:#e9e5d8; position:relative; overflow:hidden;}
+  #scr-menu>*:not(.paper-bg), #scr-setup>*:not(.paper-bg), #scr-mp>*:not(.paper-bg), #scr-mp-pick>*:not(.paper-bg), #scr-mpc-list>*:not(.paper-bg), #scr-mpc-setup>*:not(.paper-bg), #scr-mpc-draft>*:not(.paper-bg), #scr-options>*:not(.paper-bg), #scr-teams>*:not(.paper-bg),
   #scr-interval>*:not(.paper-bg), #scr-final>*:not(.paper-bg), #scr-tour-pick>*:not(.paper-bg), #scr-cup-list>*:not(.paper-bg), #scr-tour-setup>*:not(.paper-bg), #scr-tour>*:not(.paper-bg), #scr-rules>*:not(.paper-bg), #scr-history>*:not(.paper-bg), #scr-saves>*:not(.paper-bg), #scr-lang>*:not(.paper-bg), #scr-career-list>*:not(.paper-bg), #scr-career-new>*:not(.paper-bg), #scr-career>*:not(.paper-bg){position:relative; z-index:1;}
   .paper-bg{position:absolute; inset:0; z-index:0; overflow:hidden; pointer-events:none; user-select:none;}
   .pb-head{font-family:var(--px); color:#141414; font-size:clamp(1rem,2.6vw,1.7rem); text-align:center; margin-top:20px; letter-spacing:3px;}
@@ -80,7 +80,7 @@
   /* Menu principale: più in basso (deve stare sotto il titolone "Clamoroso al Cibali") */
   #scr-menu{justify-content:flex-start; padding-top:clamp(185px,24vh,225px); overflow-y:auto;}
   /* Tutte le altre maschere: altezza intermedia e uguale tra loro (compromesso: spazio per le tabelle senza salire troppo) */
-  #scr-setup, #scr-mp, #scr-mp-pick, #scr-mpc-setup, #scr-mpc-draft, #scr-options, #scr-teams, #scr-history, #scr-rules, #scr-saves, #scr-lang, #scr-tour-pick, #scr-cup-list, #scr-tour-setup, #scr-tour, #scr-career-list, #scr-career-new, #scr-career{
+  #scr-setup, #scr-mp, #scr-mp-pick, #scr-mpc-list, #scr-mpc-setup, #scr-mpc-draft, #scr-options, #scr-teams, #scr-history, #scr-rules, #scr-saves, #scr-lang, #scr-tour-pick, #scr-cup-list, #scr-tour-setup, #scr-tour, #scr-career-list, #scr-career-new, #scr-career{
     justify-content:flex-start; padding-top:clamp(150px,18vh,178px); overflow-y:auto;}
   /* ===== Multiplayer: stanza con codice ===== */
   #mp-code{text-transform:uppercase; font-family:var(--px); letter-spacing:2px; font-size:.85rem;}
@@ -188,7 +188,7 @@
   /* pulsanti riga carriera: quadrati 34x34 come il ◄ in alto, allineati al bordo destro del contenuto */
   .career-row .cbtn, #mp-resume-x, #mpc-resume-x{width:34px; height:34px; padding:0; display:flex; align-items:center; justify-content:center; line-height:1; font-family:var(--px); font-size:.62rem; border:2px solid #fff; color:#fff; box-shadow:2px 2px 0 rgba(0,0,0,.5); flex:none;}
   #career-play{font-size:.52rem; padding:11px 14px;} /* proporzionati alle altre bottoniere dell'hub */
-  #career-sim, #tour-sim, #tour-abandon, #tour-hist, #setup-hist, #cuplist-hist, #setup-pens, #hist-wipe, #mp-join, #mpc-join, #mp-resume-btn, #mpc-resume-btn{aspect-ratio:auto !important; flex-direction:row !important; font-size:.5rem !important; padding:11px 12px !important; letter-spacing:.5px; white-space:nowrap;} /* niente quadrato: bottoni bassi, da comprimari (protagonista = solo il verde); stesse metriche delle .subtab e MAI testo a capo (Enrico 2026-08-10: "proporzionati a quelli sopra") */
+  #career-sim, #tour-sim, #tour-abandon, #tour-hist, #setup-hist, #cuplist-hist, #mpclist-hist, #setup-pens, #hist-wipe, #mp-join, #mpc-join, #mp-resume-btn, #mpc-resume-btn{aspect-ratio:auto !important; flex-direction:row !important; font-size:.5rem !important; padding:11px 12px !important; letter-spacing:.5px; white-space:nowrap;} /* niente quadrato: bottoni bassi, da comprimari (protagonista = solo il verde); stesse metriche delle .subtab e MAI testo a capo (Enrico 2026-08-10: "proporzionati a quelli sopra") */
   .career-row .cres{background:#1fae1f;} .career-row .cdel, #mp-resume-x, #mpc-resume-x{background:#c1121f;}
   .trow.gday{color:var(--oro); font-family:'Segoe UI',system-ui,sans-serif; font-size:.93rem; font-weight:600; border-bottom:none; margin-top:10px;} /* Segoe come grp-h: il pixel nei titoletti di contenuto era poco leggibile (Enrico: "il gioco deve essere pulito") */
   /* schede (leghe/coppa/editor): tutte grigie, il BLU è la selezione e si sposta col click (2026-07-28, Enrico) */
@@ -340,8 +340,9 @@
   #chooser{position:fixed; inset:0; background:rgba(0,0,0,.7); display:none; align-items:center; justify-content:center; z-index:60;}
   #chooser.show{display:flex;}
   #chooser .box{max-width:420px;}
-  #confirm-modal{position:fixed; inset:0; background:rgba(0,0,0,.72); display:none; align-items:center; justify-content:center; z-index:70;}
-  #confirm-modal.show{display:flex;}
+  #confirm-modal, #info-modal{position:fixed; inset:0; background:rgba(0,0,0,.72); display:none; align-items:center; justify-content:center; z-index:70;}
+  #confirm-modal.show, #info-modal.show{display:flex;}
+  .top-info{right:66px; background:#1d4ed8;} /* il "?" contestuale: quadrato gemello del ◄, blu (Enrico 2026-08-11) */
   .confirm-box{max-width:430px; width:90%; text-align:center;}
   .confirm-msg{font-family:'Segoe UI',system-ui,sans-serif; font-size:1.05rem; line-height:1.75; color:#fff; margin-bottom:18px; white-space:pre-line;}
   .confirm-box .btn-row2{display:flex; gap:12px; margin-top:0;}
@@ -439,7 +440,7 @@
     .pb-photo::after{font-size:.4rem; padding:4px 3px;}
     .pb-photo2::after{font-size:.38rem; padding:4px 3px;}
     #scr-menu{padding-top:clamp(112px,18vh,132px);}
-    #scr-setup, #scr-mp, #scr-mp-pick, #scr-mpc-setup, #scr-mpc-draft, #scr-options, #scr-teams, #scr-history, #scr-rules, #scr-saves, #scr-lang, #scr-tour-pick, #scr-cup-list, #scr-tour-setup, #scr-tour, #scr-career-list, #scr-career-new, #scr-career{padding-top:clamp(88px,14vh,108px);}
+    #scr-setup, #scr-mp, #scr-mp-pick, #scr-mpc-list, #scr-mpc-setup, #scr-mpc-draft, #scr-options, #scr-teams, #scr-history, #scr-rules, #scr-saves, #scr-lang, #scr-tour-pick, #scr-cup-list, #scr-tour-setup, #scr-tour, #scr-career-list, #scr-career-new, #scr-career{padding-top:clamp(88px,14vh,108px);}
     .screen{padding:14px;} /* #scr-match resta padding:0 (id vince) */
     .menu-grid90{grid-template-columns:repeat(2, minmax(124px,142px)); gap:12px; padding:14px;} /* prima: minmax(145..165)+padding 20 = 386px, sbordava dai 375 */
     .b90{font-size:.54rem;}
@@ -448,6 +449,7 @@
     .panel90{padding:16px 12px;}
     .panel90 .phead{padding:0 46px;}
     .top-back{top:10px; right:12px;}
+    .top-info{right:54px;}
     /* F3 — classifiche: 9 colonne non stanno in 375px → GF e GS nascoste (Pt G V N P e DR restano).
        Vale per TUTTE le .ttab: sono solo classifiche (lega 9 col / gironi Euro 8 col), GF-GS sempre in 7ª-8ª posizione */
     .ttab td:nth-child(7), .ttab th:nth-child(7), .ttab td:nth-child(8), .ttab th:nth-child(8){display:none;}
@@ -485,7 +487,7 @@
     .panel90 .btn-row2, .btn-row{flex-wrap:wrap; gap:8px;}
     /* comprimari in PARTI UGUALI (flex-basis 0, non auto: larghezze identiche a prescindere dal testo;
        l'altezza la pareggia lo stretch di riga) */
-    #tour-sim, #tour-abandon, #tour-hist, #setup-hist, #cuplist-hist, #setup-pens, #hist-wipe, #career-sim, #mp-join, #mpc-join, #mp-resume-btn, #mpc-resume-btn{flex:1 1 0 !important; min-width:0; font-size:.44rem !important; padding:9px 4px !important; letter-spacing:0; white-space:nowrap;} /* su phone: stessa altezza/corpo delle .subtab (9px/.44) e una sola riga di testo anche per "Albo d'oro" */
+    #tour-sim, #tour-abandon, #tour-hist, #setup-hist, #cuplist-hist, #mpclist-hist, #setup-pens, #hist-wipe, #career-sim, #mp-join, #mpc-join, #mp-resume-btn, #mpc-resume-btn{flex:1 1 0 !important; min-width:0; font-size:.44rem !important; padding:9px 4px !important; letter-spacing:0; white-space:nowrap;} /* su phone: stessa altezza/corpo delle .subtab (9px/.44) e una sola riga di testo anche per "Albo d'oro" */
     /* schede editor Rosa/Forza/Inventata: senza questa regola il wrap le impilerebbe una per riga (sono .wide=100%) */
     .btn-row2 .ttag{flex:1 1 0; width:auto; font-size:.48rem; padding:11px 4px;}
     /* nomi squadra lunghi nello scoreboard: puntini invece di sbordare */
@@ -544,14 +546,14 @@
   <div class="menu-grid90" style="position:relative; padding-top:62px;">
     <button class="top-back" style="top:14px; right:20px;" onclick="UI.toMenu()" data-i18n-title="t_menu" title="Menu">◄</button>
     <button class="b90 c-gray" onclick="UI.toMp()"><span class="ico">⚽</span><span data-i18n="m_friendly">Amichevole</span></button>
-    <button class="b90 c-red" onclick="UI.toMpcSetup()"><span class="ico">🏆</span><span data-i18n="pick_cup">Coppa</span></button>
+    <button class="b90 c-red" onclick="UI.toMpcList()"><span class="ico">🏆</span><span data-i18n="pick_cup">Coppa</span></button>
   </div>
   <div class="mcopy" data-i18n="mcopy_mp">Multiplayer: sfida un amico, ognuno dal suo dispositivo</div>
 </div>
 
 <div id="scr-mp" class="screen">
   <div class="panel90">
-    <button class="top-back" onclick="UI.mpBack()" data-i18n-title="t_back" title="Indietro">◄</button>
+    <button class="top-back top-info" onclick="UI.info(6)" data-i18n-title="t_info" title="Regole">?</button><button class="top-back" onclick="UI.mpBack()" data-i18n-title="t_back" title="Indietro">◄</button>
     <div class="phead" data-i18n="mp_fr_head">⚽ Amichevole in due</div>
     <div id="mp-setup">
       <div id="mp-resume-row" style="display:none; margin-bottom:14px;">
@@ -586,13 +588,26 @@
   </div>
 </div>
 
-<!-- ===== COPPA MULTIPLAYER: SETUP (riprendi / entra con codice / crea) ===== -->
+<!-- ===== COPPA MULTIPLAYER: ELENCO (Enrico 2026-08-11: stesso ingresso della Coppa normale —
+     prima l'elenco delle coppe in corso con l'Albo, POI l'eventuale creazione) ===== -->
+<div id="scr-mpc-list" class="screen">
+  <div class="panel90" style="max-width:640px;">
+    <button class="top-back top-info" onclick="UI.info(6)" data-i18n-title="t_info" title="Regole">?</button><button class="top-back" onclick="UI.toMpPick()" data-i18n-title="t_back" title="Indietro">◄</button>
+    <div class="phead" data-i18n="mpc_head">🏆 Coppa multiplayer</div>
+    <div id="mpc-saves" style="margin-top:8px;"></div>
+    <div class="btn-row2">
+      <button class="b90 c-green wide" onclick="UI.toMpcSetup()" data-i18n="btn_newcup">Nuova coppa</button>
+      <button class="b90 c-gray" id="mpclist-hist" style="flex:0 0 auto; font-size:.5rem; padding:13px 16px;" onclick="UI.toHistory()" data-i18n="opt_history">Albo d'oro</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== COPPA MULTIPLAYER: SETUP (entra con codice / crea) ===== -->
 <div id="scr-mpc-setup" class="screen">
   <div class="panel90" style="max-width:600px;">
-    <button class="top-back" onclick="UI.toMpPick()" data-i18n-title="t_back" title="Indietro">◄</button>
+    <button class="top-back top-info" onclick="UI.info(6)" data-i18n-title="t_info" title="Regole">?</button><button class="top-back" onclick="UI.toMpcList()" data-i18n-title="t_back" title="Indietro">◄</button>
     <div class="phead" data-i18n="mpc_head">🏆 Coppa multiplayer</div>
     <!-- le coppe in corso: una riga per biglietto (multi-coppa, stile lista carriere) -->
-    <div id="mpc-resume-list" style="margin-bottom:6px;"></div>
     <label data-i18n="mpc_lbl_pname">Il tuo nome (per l'albo d'oro, facoltativo)</label>
     <input type="text" id="mpc-pname" maxlength="14" autocomplete="off">
     <label data-i18n="mpc_havecode">Hai un codice? Entra nella coppa dell'amico</label>
@@ -605,6 +620,7 @@
     <label data-i18n="lbl_cupera">Epoca della coppa</label>
     <select id="mpc-era"></select>
     <label data-i18n="lbl_parts">Squadre partecipanti</label>
+    <select id="mpc-nat" style="margin-bottom:8px;"></select><!-- tendina nazioni: meno scorrimento (Enrico 2026-08-11) -->
     <div id="mpc-teams-pick" class="pick-list"></div>
     <label data-i18n="mpc_lbl_per">Squadre controllate da ciascun giocatore</label>
     <select id="mpc-per"></select><!-- opzioni dinamiche: fino a metà dei partecipanti spuntati -->
@@ -678,7 +694,7 @@
 <!-- ===== CONFIGURAZIONE SQUADRE ===== -->
 <div id="scr-teams" class="screen">
   <div class="panel90" style="max-width:840px;">
-    <button class="top-back" onclick="UI.toOptions()" data-i18n-title="t_options" title="Opzioni">◄</button>
+    <button class="top-back top-info" onclick="UI.infoTeams()" data-i18n-title="t_info" title="Regole">?</button><button class="top-back" onclick="UI.toOptions()" data-i18n-title="t_options" title="Opzioni">◄</button>
     <div class="phead" data-i18n="teams_head">👕 Configurazione squadre</div>
     <div class="rules-note" id="teams-msg-top" style="margin:8px 0 4px;"></div>
     <label data-i18n="lbl_country">Paese</label>
@@ -782,6 +798,17 @@
   </div>
 </div>
 
+<!-- ===== INFO CONTESTUALE: il "?" richiama la scheda del regolamento giusta, sopra la pagina (2026-08-11) ===== -->
+<div id="info-modal">
+  <div class="box confirm-box" style="max-width:560px; text-align:left;">
+    <div class="phead" id="info-title" style="padding:0 0 8px; margin:0;"></div>
+    <div id="info-body" class="rules-body" style="max-height:56vh; overflow-y:auto; padding-right:6px; height:auto;"></div>
+    <div class="btn-row2" style="justify-content:center; margin-top:14px;">
+      <button class="b90 c-gray wide" style="max-width:220px;" onclick="UI.closeInfo()" data-i18n="c_close">Chiudi</button>
+    </div>
+  </div>
+</div>
+
 <!-- ===== USCITA DAL MATCH nelle competizioni: sospendi / ritiro 0-3 a tavolino / resta ===== -->
 <div id="quit-modal" style="position:fixed; inset:0; background:rgba(0,0,0,.72); display:none; align-items:center; justify-content:center; z-index:70;">
   <div class="box confirm-box">
@@ -870,7 +897,7 @@
      Prima saltava dritta nell'unica coppa attiva e non se ne poteva iniziare una seconda. -->
 <div id="scr-cup-list" class="screen">
   <div class="panel90" style="max-width:640px;">
-    <button class="top-back" onclick="UI.toTourPick()" data-i18n-title="t_back" title="Indietro">◄</button>
+    <button class="top-back top-info" onclick="UI.info(4)" data-i18n-title="t_info" title="Regole">?</button><button class="top-back" onclick="UI.toTourPick()" data-i18n-title="t_back" title="Indietro">◄</button>
     <div class="phead" data-i18n="pick_cup">🏆 Coppa</div>
     <div id="tour-saves" style="margin-top:8px;"></div>
     <div class="btn-row2">
@@ -883,13 +910,14 @@
 <!-- ===== COPPA: SETUP (layout giornale) ===== -->
 <div id="scr-tour-setup" class="screen">
   <div class="panel90" style="max-width:600px;">
-    <button class="top-back" onclick="UI.tourSetupBack()" data-i18n-title="t_back" title="Indietro">◄</button>
+    <button class="top-back top-info" onclick="UI.info(4)" data-i18n-title="t_info" title="Regole">?</button><button class="top-back" onclick="UI.tourSetupBack()" data-i18n-title="t_back" title="Indietro">◄</button>
     <div class="phead" data-i18n="ts_head">🏆 Nuova Coppa</div>
     <label data-i18n="lbl_cupname">Nome della coppa</label>
     <input type="text" id="tour-name" value="Coppa" maxlength="24">
     <label data-i18n="lbl_cupera">Epoca della coppa</label>
     <select id="tour-era"></select>
     <label data-i18n="lbl_parts">Squadre partecipanti</label>
+    <select id="tour-nat" style="margin-bottom:8px;"></select><!-- tendina nazioni: meno scorrimento (Enrico 2026-08-11) -->
     <div id="tour-teams-pick" class="pick-list"></div>
     <label data-i18n="lbl_yourteam">La tua squadra</label>
     <select id="tour-user"></select>
@@ -926,7 +954,7 @@
 <!-- ===== CARRIERA: LISTA SALVATAGGI ===== -->
 <div id="scr-career-list" class="screen">
   <div class="panel90" style="max-width:640px;">
-    <button class="top-back" onclick="UI.toTourPick()" data-i18n-title="t_back" title="Indietro">◄</button>
+    <button class="top-back top-info" onclick="UI.info(5)" data-i18n-title="t_info" title="Regole">?</button><button class="top-back" onclick="UI.toTourPick()" data-i18n-title="t_back" title="Indietro">◄</button>
     <div class="phead" data-i18n="cl_head">📅 Carriera</div>
     <div id="career-saves" style="margin-top:8px;"></div>
     <div class="btn-row2">
@@ -938,7 +966,7 @@
 <!-- ===== CARRIERA: NUOVA ===== -->
 <div id="scr-career-new" class="screen">
   <div class="panel90" style="max-width:560px;">
-    <button class="top-back" onclick="UI.toCareerList()" data-i18n-title="t_back" title="Indietro">◄</button>
+    <button class="top-back top-info" onclick="UI.info(5)" data-i18n-title="t_info" title="Regole">?</button><button class="top-back" onclick="UI.toCareerList()" data-i18n-title="t_back" title="Indietro">◄</button>
     <div class="phead" data-i18n="cn_head">📅 Nuova carriera</div>
     <label data-i18n="lbl_savename">Nome del salvataggio</label>
     <input type="text" id="career-name" value="La mia carriera" maxlength="28">
@@ -961,7 +989,7 @@
 <!-- ===== CARRIERA: HUB STAGIONE ===== -->
 <div id="scr-career" class="screen">
   <div class="panel90" style="max-width:880px;">
-    <button class="top-back" onclick="UI.careerSaveExit()" data-i18n-title="t_saveexit" title="Salva ed esci">◄</button>
+    <button class="top-back top-info" onclick="UI.info(5)" data-i18n-title="t_info" title="Regole">?</button><button class="top-back" onclick="UI.careerSaveExit()" data-i18n-title="t_saveexit" title="Salva ed esci">◄</button>
     <div class="phead" id="career-title">📅 Carriera</div>
     <div id="career-status" class="sub" style="text-align:center; margin-bottom:4px; padding:0 44px;"></div>
     <div class="tour-tabs" id="career-tabs"></div>
@@ -1313,7 +1341,7 @@ I18N.it={
  mp_opp_wait2:"In attesa che l'avversario inizi il 2° tempo",
  // coppa multiplayer
  mpc_cup:'🏆 Crea una coppa',
- mpc_head:'🏆 Coppa multiplayer',
+ mpc_head:'Coppa multiplayer',
  mpc_lbl_per:'Squadre controllate da ciascun giocatore',
  mpc_create:'Crea la coppa',
  mpc_note:"Tu e un amico nella stessa coppa: le squadre si scelgono a turno, una a testa. Quelle non scelte le guida l'IA. Ognuno gioca le sue partite dal suo dispositivo, anche in contemporanea; quando le vostre squadre si incontrano è sfida diretta.",
@@ -1332,7 +1360,7 @@ I18N.it={
  mpc_opp_quit:"L'amico ha lasciato: la coppa finisce qui.",
  q_mpc_abandon:'Vuoi abbandonare la coppa? Finisce per tutti e due.',
  mcopy_mp:'Multiplayer: sfida un amico, ognuno dal suo dispositivo',
- mp_fr_head:'⚽ Amichevole in due',
+ mp_fr_head:'Amichevole in due',
  mpc_havecode:"Hai un codice? Entra nella coppa dell'amico",
  mpc_lbl_pname:"Il tuo nome (per l'albo d'oro, facoltativo)",
  mpc_redirected:"È il codice di una COPPA: ti ho portato nella schermata giusta. Controlla il tuo nome (per l'albo) e premi Entra.",
@@ -1341,7 +1369,7 @@ I18N.it={
  cz_head:'COPPA CONCLUSA<br>{0}', cz_champ:'CAMPIONE', cz_second:'FINALISTA', cz_capo:'CAPOCANNONIERE',
  mpc_err_isroom:"Questo è il codice di una partita amichevole: entra da Multiplayer → Amichevole.",
  mpc_opp_forfeit:"L'amico si è ritirato dalla sfida: 0-3 a tavolino. La coppa continua!",
- q_mpc_exit:'La coppa resta salvata (anche per l\'amico): la riprendi da Multiplayer → Riprendi la coppa. Esci?',
+ q_mpc_exit:'La coppa resta salvata (anche per l\'amico): la riprendi da Multiplayer → Coppa, dall\'elenco delle coppe in corso. Esci?',
  mpc_resume:'Riprendi la coppa',
  mpc_gone:'Coppa non trovata (chiusa o scaduta).',
  tipo_cupmp:'Coppa multiplayer',
@@ -1419,7 +1447,7 @@ I18N.it={
  qm_msg:'Vuoi lasciare la partita?',
  qm_msg_duel:'Vuoi lasciare la sfida diretta?',
  qm_susp:'⏸ Sospendi: riprenderai da qui, stesse carte',
- qm_exit_duel:'🚪 Esci: rientri da "Riprendi la coppa"',
+ qm_exit_duel:'🚪 Esci: rientri dall\'elenco delle coppe',
  qm_forfeit:'🏳 Ritiro: sconfitta 0-3 a tavolino',
  qm_stay:'Resta in campo',
  q_forfeit_sure:'Confermi il ritiro? La partita è persa 0-3 a tavolino, senza appello.',
@@ -1443,6 +1471,8 @@ I18N.it={
  btn_next:'Prosegui', btn_resume_susp:'Riprendi la partita sospesa', btn_newcomp:'Nuova competizione', btn_abandon:'Annulla',
  btn_newcup:'Nuova coppa', tl_empty:'Nessuna coppa in corso: creane una nuova.', tl_del:'Elimina coppa', tl_done:'Conclusa',
  btn_penstrial:'Solo rigori',
+ mpcl_empty:'Nessuna coppa in corso: creane una nuova o entra con un codice.',
+ nat_all:'Tutte le nazioni', t_info:'Le regole di questa sezione', c_close:'Chiudi',
  q_del_cup:'Eliminare la coppa "{0}"?\nClassifica e risultati andranno persi.',
  sel_all:'Seleziona tutte',
  warn_2:'⚠ Servono almeno 2 squadre.',
@@ -1552,7 +1582,7 @@ I18N.en={
  mp_opp_wait2:'Waiting for your opponent to start the 2nd half',
  // multiplayer cup
  mpc_cup:'🏆 Create a cup',
- mpc_head:'🏆 Multiplayer cup',
+ mpc_head:'Multiplayer cup',
  mpc_lbl_per:'Teams controlled by each player',
  mpc_create:'Create the cup',
  mpc_note:"You and a friend in the same cup: teams are picked in turns, one each. Unpicked teams are run by the AI. Each of you plays your own matches on your own device, even at the same time; when your teams meet it's a head-to-head match.",
@@ -1571,7 +1601,7 @@ I18N.en={
  mpc_opp_quit:'Your friend left: the cup ends here.',
  q_mpc_abandon:'Abandon the cup? It ends for both of you.',
  mcopy_mp:'Multiplayer: challenge a friend, each on your own device',
- mp_fr_head:'⚽ Two-player friendly',
+ mp_fr_head:'Two-player friendly',
  mpc_havecode:"Got a code? Join your friend's cup",
  mpc_lbl_pname:'Your name (for the hall of fame, optional)',
  mpc_redirected:"That's a CUP code: I've taken you to the right screen. Check your name (for the hall of fame) and press Join.",
@@ -1580,7 +1610,7 @@ I18N.en={
  cz_head:'CUP COMPLETE<br>{0}', cz_champ:'CHAMPIONS', cz_second:'RUNNERS-UP', cz_capo:'TOP SCORER',
  mpc_err_isroom:'This is a friendly match code: join from Multiplayer → Friendly.',
  mpc_opp_forfeit:'Your friend forfeited the match: 3-0 walkover. The cup goes on!',
- q_mpc_exit:'The cup stays saved (for your friend too): resume it from Multiplayer → Resume the cup. Leave?',
+ q_mpc_exit:'The cup stays saved (for your friend too): resume it from Multiplayer → Cup, from the list of cups in progress. Leave?',
  mpc_resume:'Resume the cup',
  mpc_gone:'Cup not found (closed or expired).',
  tipo_cupmp:'Multiplayer cup',
@@ -1658,7 +1688,7 @@ I18N.en={
  qm_msg:'Leave this match?',
  qm_msg_duel:'Leave the head-to-head match?',
  qm_susp:'⏸ Suspend: resume from here, same cards',
- qm_exit_duel:'🚪 Leave: return via "Resume the cup"',
+ qm_exit_duel:'🚪 Leave: return from the cup list',
  qm_forfeit:'🏳 Forfeit: 0-3 walkover defeat',
  qm_stay:'Stay on the pitch',
  q_forfeit_sure:'Confirm the forfeit? The match is lost 0-3, no appeal.',
@@ -1682,6 +1712,8 @@ I18N.en={
  btn_next:'Continue', btn_resume_susp:'Resume the suspended match', btn_newcomp:'New competition', btn_abandon:'Abandon',
  btn_newcup:'New cup', tl_empty:'No cups in progress: create a new one.', tl_del:'Delete cup', tl_done:'Finished',
  btn_penstrial:'Penalties only',
+ mpcl_empty:'No cups in progress: create a new one or join with a code.',
+ nat_all:'All countries', t_info:'The rules for this section', c_close:'Close',
  q_del_cup:'Delete the cup "{0}"?\nTable and results will be lost.',
  sel_all:'Select all',
  warn_2:'⚠ At least 2 teams are needed.',
@@ -2084,6 +2116,7 @@ function refreshTourUser(){
   const prev=sel.value, idxs=selectedTourIdx();
   fillGroupedFrom(sel,idxs, idxs.map(String).includes(prev)?prev:(idxs.length?String(idxs[0]):null));
   refreshGroupsSel($('tour-groups'),idxs.length);
+  natFilterCounts('tour-nat','tour-teams-pick'); // conteggi sempre aggiornati a ogni spunta
 }
 function qualFor(nG,n){return nG===1?(n>=4?4:2):nG===2?4:8;} // qualificate DERIVATE dai gironi: via due tendine (Enrico 2026-08-08: "2 opzioni e non 4")
 function refreshGroupsSel(gsel,n){ // opzioni gironi valide per n squadre spuntate (solo gruppi uguali); l'etichetta dice già le qualificate
@@ -2460,17 +2493,37 @@ function tourStandings(grpK){ // grpK: solo quel girone (squadre e partite); ass
   out.sort((a,b)=>b.Pt-a.Pt||(b.GF-b.GS)-(a.GF-a.GS)||b.GF-a.GF||(a.name<b.name?-1:a.name>b.name?1:0)); // confronto SEMPLICE, non localeCompare: nel multiplayer i due dispositivi devono ordinare IDENTICO (da qui nascono le teste di serie del KO)
   return out;
 }
+function natFilterCounts(selId,hostId){ // le SPUNTE NASCOSTE si vedono sempre: la tendina mostra il conteggio per nazione (fix 2026-08-11, dal "baco" di Enrico: Manchester spuntato ma invisibile sotto un'altra nazione)
+  const sel=$(selId),host=$(hostId);if(!sel||!sel.options.length)return;
+  [...sel.options].forEach(o=>{
+    const cbs=o.value==='ALL'?host.querySelectorAll('label.pick[data-co] input'):host.querySelectorAll('label.pick[data-co="'+o.value+'"] input');
+    const n=[...cbs].filter(c=>c.checked).length;
+    o.textContent=(o.value==='ALL'?T.nat_all:coLbl(o.value))+(n?' ('+n+')':'');
+  });
+}
+function natFilterInit(selId,hostId,allId){ // TENDINA NAZIONI nei setup coppa (Enrico 2026-08-11): si vede una nazione
+  // alla volta (niente scroll chilometrico); le SPUNTE restano anche sulle squadre nascoste. "Tutte" per la vista completa.
+  const sel=$(selId),host=$(hostId);if(!sel)return;
+  const cs=Object.keys(teamsByCountry());
+  sel.innerHTML=`<option value="ALL">${T.nat_all}</option>`+cs.map(c=>`<option value="${escHtml(c)}">${coLbl(c)}</option>`).join('');
+  sel.value=cs[0]; // si parte dalla prima nazione: lista corta
+  const apply=()=>{const v=sel.value;host.querySelectorAll('[data-co]').forEach(el=>{el.style.display=(v==='ALL'||el.dataset.co===v)?'':'none';});
+    if(allId&&$(allId)){const cbs=[...host.querySelectorAll('label.pick[data-co]')].filter(l=>v==='ALL'||l.dataset.co===v).map(l=>l.querySelector('input'));$(allId).checked=cbs.length>0&&cbs.every(c=>c.checked);}
+    natFilterCounts(selId,hostId);};
+  sel.onchange=apply;apply();
+}
 function renderTourSetup(){
   const host=$('tour-teams-pick');host.innerHTML='';
-  host.insertAdjacentHTML('beforeend',`<label class="pick" style="border-color:var(--oro); grid-column:1/-1;"><input type="checkbox" id="tt-all" checked> ${T.sel_all}</label>`);
+  host.insertAdjacentHTML('beforeend',`<label class="pick" style="border-color:var(--oro); grid-column:1/-1;"><input type="checkbox" id="tt-all"> ${T.sel_all}</label>`);
   Object.entries(teamsByCountry()).forEach(([c,list])=>{
-    host.insertAdjacentHTML('beforeend',`<div class="pick-country">${coLbl(c)}</div>`);
-    list.forEach(i=>host.insertAdjacentHTML('beforeend',`<label class="pick"><input type="checkbox" id="tt-${i}" checked> ${CLUBS[i].club}</label>`));
+    host.insertAdjacentHTML('beforeend',`<div class="pick-country" data-co="${escHtml(c)}">${coLbl(c)}</div>`);
+    list.forEach(i=>host.insertAdjacentHTML('beforeend',`<label class="pick" data-co="${escHtml(c)}"><input type="checkbox" id="tt-${i}"> ${CLUBS[i].club}</label>`));
   });
   CLUBS.forEach((c,i)=>{const cb=$('tt-'+i);if(cb)cb.onchange=refreshTourUser;});
-  $('tt-all').onchange=()=>{CLUBS.forEach((c,i)=>{if($('tt-'+i))$('tt-'+i).checked=$('tt-all').checked;});refreshTourUser();};
+  $('tt-all').onchange=()=>{const v=$('tour-nat')?$('tour-nat').value:'ALL';CLUBS.forEach((c,i)=>{const cb=$('tt-'+i);if(cb&&(v==='ALL'||c.country===v))cb.checked=$('tt-all').checked;});refreshTourUser();}; // spunta/toglie SOLO la nazione mostrata (Enrico 2026-08-11)
   refreshTourUser();
   fillEraSelect($('tour-era'),false);
+  natFilterInit('tour-nat','tour-teams-pick','tt-all');
 }
 /* ===== Tabellone visivo della fase a eliminazione ===== */
 function tourMine(i){return TOUR.mp?TOUR.owners[i]===TOUR.mp.role:i===TOUR.user;} // "mia" anche in multiplayer (owner, non user)
@@ -2595,7 +2648,7 @@ function injectPaper(){
     <div class="pb-cols"><div class="pb-col"></div><div class="pb-col"></div><div class="pb-col"></div><div class="pb-col"></div></div>
     <div class="pb-photo"><div class="pb-scene"><div class="pb-spr" style="left:16%;top:12%;"></div><div class="pb-ball" style="left:48%;top:56%;"></div><div class="pb-spr" style="left:64%;top:26%;"></div></div></div>
     <div class="pb-photo2"><div class="pb-scene"><div class="pb-spr big" style="left:30%;top:8%;"></div><div class="pb-ball" style="left:22%;top:78%;"></div></div></div>`;
-  ['scr-menu','scr-setup','scr-mp','scr-mp-pick','scr-mpc-setup','scr-mpc-draft','scr-options','scr-teams','scr-interval','scr-final','scr-tour-pick','scr-cup-list','scr-tour-setup','scr-tour','scr-rules','scr-history','scr-saves','scr-lang','scr-career-list','scr-career-new','scr-career'].forEach(id=>{
+  ['scr-menu','scr-setup','scr-mp','scr-mp-pick','scr-mpc-list','scr-mpc-setup','scr-mpc-draft','scr-options','scr-teams','scr-interval','scr-final','scr-tour-pick','scr-cup-list','scr-tour-setup','scr-tour','scr-rules','scr-history','scr-saves','scr-lang','scr-career-list','scr-career-new','scr-career'].forEach(id=>{
     const el=document.getElementById(id);if(!el)return;
     const d=document.createElement('div');d.className='paper-bg';d.innerHTML=htmlFor(id);
     el.prepend(d);
@@ -3025,7 +3078,7 @@ const RULES=[
    <h5>L'incognita</h5>
    <p>Resta sempre un pizzico di imprevedibilità: ogni tanto, del tutto a caso, anche una squadra scarsa può battere una grande.</p>`},
  {t:'La Coppa',h:`<h5>La formula</h5>
-   <p>Dal menu Torneo scegli la <b>Coppa</b>: selezioni le squadre, decidi quanti gironi (uno, due o quattro — sorteggio casuale) e la formula, andata e ritorno o solo andata, sia per i gironi sia per le fasi finali (la finale è sempre secca). Le migliori di ogni girone si incrociano nella fase a eliminazione, con il tabellone sempre visibile. Il calendario è generato in automatico e le partite che non giochi tu le disputa l'IA con le stesse regole.</p>
+   <p>Dal menu Torneo → <b>Coppa</b> trovi l'elenco delle coppe in corso: rientri dove avevi lasciato oppure premi <b>Nuova coppa</b>. Nel setup scegli le squadre <b>nazione per nazione</b> con la tendina (che segna quante ne hai spuntate in ciascuna; si parte da zero: <b>gioca solo chi spunti tu</b>), poi decidi quanti gironi (uno, due o quattro — sorteggio casuale) e la formula, andata e ritorno o solo andata, sia per i gironi sia per le fasi finali (la finale è sempre secca). Le migliori di ogni girone si incrociano nella fase a eliminazione, con il tabellone sempre visibile. Il calendario è generato in automatico e le partite che non giochi tu le disputa l'IA con le stesse regole.</p>
    <h5>Sospendere o ritirarsi</h5>
    <p>Col ✖ durante una partita di coppa o di carriera scegli tu: <b>sospendi</b> (riprenderai esattamente da lì, stesse carte) oppure <b>ritiro</b> — la partita è persa <b>0-3 a tavolino</b>. Niente scorciatoie: uscire non annulla mai l'incontro.</p>
    <h5>Classifica e titoli</h5>
@@ -3045,9 +3098,9 @@ const RULES=[
    <h5>Se cade la connessione</h5>
    <p>Nessuna partita persa: chi resta in campo vede l'avviso e <b>aspetta senza fretta</b> (o esce con ✖); chi è caduto torna in Multiplayer → Amichevole e trova <b>"Riprendi la partita"</b> — si rientra esattamente dov'era, stesse carte e stesso punteggio. Vale anche se la pagina si chiude per sbaglio.</p>
    <h5>La coppa in due</h5>
-   <p>Da Multiplayer → <b>Coppa</b> giochi un'intera coppa con un amico: le squadre si scelgono <b>a turno, una a testa</b> (le altre le guida l'IA), poi girone e fase finale come nella coppa normale. Ognuno gioca le proprie partite dal suo dispositivo, <b>anche in contemporanea</b>; quando le vostre squadre si incontrano è <b>sfida diretta</b>, supplementari e rigori compresi. La coppa <b>resta salvata per un mese</b>: si esce e si riprende un altro giorno da "Riprendi la coppa", e il trofeo finisce nell'<b>Albo d'oro</b> di entrambi.</p>
+   <p>Da Multiplayer → <b>Coppa</b> giochi un'intera coppa con un amico: le squadre si scelgono <b>a turno, una a testa</b> (le altre le guida l'IA), poi girone e fase finale come nella coppa normale. Ognuno gioca le proprie partite dal suo dispositivo, <b>anche in contemporanea</b>; quando le vostre squadre si incontrano è <b>sfida diretta</b>, supplementari e rigori compresi. La coppa <b>resta salvata per un mese</b>: si esce e si riprende un altro giorno dall'<b>elenco delle coppe in corso</b> (che mostra anche l'Albo d'oro e a che punto siete), e il trofeo finisce nell'<b>Albo d'oro</b> di entrambi, <b>intestato ai vostri nomi</b>.</p>
    <h5>Uscire da una sfida diretta</h5>
-   <p>Col ✖ hai due strade: <b>esci</b> (la sfida resta in sospeso: rientri da "Riprendi la coppa") oppure <b>ti ritiri</b> — sconfitta <b>0-3 a tavolino</b> e la coppa continua per tutti e due. Solo <b>Annulla</b> dall'hub chiude la coppa per entrambi.</p>`},
+   <p>Col ✖ hai due strade: <b>esci</b> (la sfida resta in sospeso: rientri dall'elenco delle coppe) oppure <b>ti ritiri</b> — sconfitta <b>0-3 a tavolino</b> e la coppa continua per tutti e due. Solo <b>Annulla</b> dall'hub chiude la coppa per entrambi.</p>`},
  {t:'Spareggi',h:`<h5>In campionato e nei gironi</h5>
    <p>Il pareggio è un risultato valido (1 punto a testa). A pari punti in classifica decidono <b>la differenza reti e poi i gol fatti</b>, come nella realtà: nessuno spareggio.</p>
    <h5>Supplementari</h5>
@@ -3086,7 +3139,7 @@ I18N.en.rules=[
    <h5>The wildcard</h5>
    <p>A pinch of unpredictability always remains: every now and then, completely at random, even a weak team can beat a great one.</p>`},
  {t:'The Cup',h:`<h5>The format</h5>
-   <p>From the Tournament menu choose the <b>Cup</b>: pick the teams, choose how many groups (one, two or four — random draw) and the formula, home-and-away or single round, both for the groups and for the knockout rounds (the final is always a single match). The best of each group cross over into the knockout stage, with the bracket always visible. The schedule is generated automatically and the matches you don't play are handled by the AI under the same rules.</p>
+   <p>From the Tournament menu → <b>Cup</b> you'll find the list of cups in progress: pick up where you left off or press <b>New cup</b>. In the setup choose the teams <b>country by country</b> with the dropdown (it shows how many you've ticked in each; you start from zero: <b>only the teams you tick take part</b>), then choose how many groups (one, two or four — random draw) and the formula, home-and-away or single round, both for the groups and for the knockout rounds (the final is always a single match). The best of each group cross over into the knockout stage, with the bracket always visible. The schedule is generated automatically and the matches you don't play are handled by the AI under the same rules.</p>
    <h5>Suspend or forfeit</h5>
    <p>With ✖ during a cup or career match you choose: <b>suspend</b> (you'll resume exactly from there, same cards) or <b>forfeit</b> — the match is lost <b>0-3 by walkover</b>. No shortcuts: leaving never cancels a match.</p>
    <h5>Table and titles</h5>
@@ -3106,9 +3159,9 @@ I18N.en.rules=[
    <h5>If the connection drops</h5>
    <p>No match is ever lost: the player still on the pitch sees a notice and <b>waits, no rush</b> (or leaves with ✖); the one who dropped goes back to Multiplayer → Friendly and finds <b>"Resume the match"</b> — back exactly where it was, same cards, same score. It also works if the page gets closed by mistake.</p>
    <h5>The two-player cup</h5>
-   <p>From Multiplayer → <b>Cup</b> you play a whole cup with a friend: teams are picked <b>in turns, one each</b> (the AI runs the rest), then group stage and knockout phase just like the regular cup. Each of you plays your own matches on your own device, <b>even at the same time</b>; when your teams meet it's a <b>head-to-head match</b>, extra time and penalties included. The cup <b>stays saved for a month</b>: leave and resume another day via "Resume the cup", and the trophy goes into <b>both players' Hall of fame</b>.</p>
+   <p>From Multiplayer → <b>Cup</b> you play a whole cup with a friend: teams are picked <b>in turns, one each</b> (the AI runs the rest), then group stage and knockout phase just like the regular cup. Each of you plays your own matches on your own device, <b>even at the same time</b>; when your teams meet it's a <b>head-to-head match</b>, extra time and penalties included. The cup <b>stays saved for a month</b>: leave and resume another day from the <b>list of cups in progress</b> (which also shows the Hall of fame and how far you've got), and the trophy goes into <b>both players' Hall of fame</b>, <b>under your names</b>.</p>
    <h5>Leaving a head-to-head match</h5>
-   <p>With ✖ you have two options: <b>leave</b> (the match stays on hold: return via "Resume the cup") or <b>forfeit</b> — a <b>0-3 walkover</b> defeat and the cup goes on for both. Only <b>Abandon</b> from the cup hub closes it for both of you.</p>`},
+   <p>With ✖ you have two options: <b>leave</b> (the match stays on hold: return from the cup list) or <b>forfeit</b> — a <b>0-3 walkover</b> defeat and the cup goes on for both. Only <b>Abandon</b> from the cup hub closes it for both of you.</p>`},
  {t:'Tie-breaks',h:`<h5>In leagues and groups</h5>
    <p>A draw is a valid result (1 point each). If teams finish level on points, <b>goal difference and then goals scored</b> decide, like in real life: no play-off.</p>
    <h5>Extra time</h5>
@@ -4196,24 +4249,26 @@ function refreshMpcPer(){ // squadre a testa: nessun tetto fisso — fino a MET�
   for(let k=1;k<=max;k++){const o=document.createElement('option');o.value=k;o.textContent=k;sel.appendChild(o);}
   sel.value=Math.min(prev,max);
   refreshGroupsSel($('mpc-groups'),n); // le opzioni gironi seguono le squadre spuntate, come in solitaria
+  natFilterCounts('mpc-nat','mpc-teams-pick'); // conteggi sempre aggiornati a ogni spunta
 }
 function renderMpcSetup(){
   const host=$('mpc-teams-pick');host.innerHTML='';
-  host.insertAdjacentHTML('beforeend',`<label class="pick" style="border-color:var(--oro); grid-column:1/-1;"><input type="checkbox" id="mc-all" checked> ${T.sel_all}</label>`);
+  host.insertAdjacentHTML('beforeend',`<label class="pick" style="border-color:var(--oro); grid-column:1/-1;"><input type="checkbox" id="mc-all"> ${T.sel_all}</label>`);
   Object.entries(teamsByCountry()).forEach(([c,list])=>{
-    host.insertAdjacentHTML('beforeend',`<div class="pick-country">${coLbl(c)}</div>`);
-    list.forEach(i=>host.insertAdjacentHTML('beforeend',`<label class="pick"><input type="checkbox" id="mc-${i}" checked> ${CLUBS[i].club}</label>`));
+    host.insertAdjacentHTML('beforeend',`<div class="pick-country" data-co="${escHtml(c)}">${coLbl(c)}</div>`);
+    list.forEach(i=>host.insertAdjacentHTML('beforeend',`<label class="pick" data-co="${escHtml(c)}"><input type="checkbox" id="mc-${i}"> ${CLUBS[i].club}</label>`));
   });
   CLUBS.forEach((c,i)=>{const cb=$('mc-'+i);if(cb)cb.onchange=refreshMpcPer;});
-  $('mc-all').onchange=()=>{CLUBS.forEach((c,i)=>{if($('mc-'+i))$('mc-'+i).checked=$('mc-all').checked;});refreshMpcPer();};
+  $('mc-all').onchange=()=>{const v=$('mpc-nat')?$('mpc-nat').value:'ALL';CLUBS.forEach((c,i)=>{const cb=$('mc-'+i);if(cb&&(v==='ALL'||c.country===v))cb.checked=$('mc-all').checked;});refreshMpcPer();}; // spunta/toglie SOLO la nazione mostrata (Enrico 2026-08-11)
   fillEraSelect($('mpc-era'),false);
   refreshMpcPer();
+  natFilterInit('mpc-nat','mpc-teams-pick','mc-all');
   $('mpc-msg').innerHTML=T.mpc_note;
 }
 function renderMpcDraft(){
   if(!MPC||!MPC.cfg)return;
   const cfg=MPC.cfg, picks=MPC.picks.filter(Boolean), total=cfg.per*2;
-  $('mpc-draft-head').textContent='🏆 '+cfg.name;
+  $('mpc-draft-head').textContent=cfg.name; // niente icona: semplicità (Enrico 2026-08-11)
   $('mpc-code-big').textContent=MPC.code;
   const owners=cfg.pool.map(()=>null);
   picks.forEach(p=>{owners[p.i]=p.o;});
@@ -4648,19 +4703,19 @@ async function mpcResumeCup(code){ // dal biglietto SCELTO: si ricostruisce TUTT
   show('scr-mpc-draft');
   $('mpc-draft-head').textContent='🏆';$('mpc-code-big').textContent=mk.code;$('mpc-draft-list').innerHTML='';$('mpc-turn').textContent='';
   mpcStatus(T.mp_connecting,true);
-  let db;try{db=await fbInit();}catch(e){UI.toMpcSetup();askConfirm(T.mp_err_net,()=>{});return;}
+  let db;try{db=await fbInit();}catch(e){UI.toMpcList();askConfirm(T.mp_err_net,()=>{});return;}
   mpcStatus(T.mp_resuming,true);
-  let snap;try{snap=await db.ref('cups/'+mk.code).once('value');}catch(e){UI.toMpcSetup();askConfirm(T.mp_err_net,()=>{});return;}
+  let snap;try{snap=await db.ref('cups/'+mk.code).once('value');}catch(e){UI.toMpcList();askConfirm(T.mp_err_net,()=>{});return;}
   const room=snap.val();
   if(!room||!room.cfg||room.quit){
     mpcUnmark(mk.code);
-    UI.toMpcSetup();askConfirm((room&&room.quit&&room.quit!==mk.role)?T.mpc_opp_quit:T.mpc_gone,()=>{});return;
+    UI.toMpcList();askConfirm((room&&room.quit&&room.quit!==mk.role)?T.mpc_opp_quit:T.mpc_gone,()=>{});return;
   }
   let role=mk.role;
   const cids=room.cid||{};
   if(mk.cid){if(cids.h===mk.cid)role='h';else if(cids.g===mk.cid)role='g';} // la sedia la dice la FIRMA (lezione 2026-08-02)
   const sure=!!(mk.cid&&(cids.h===mk.cid||cids.g===mk.cid)); // sedia firmata mia: il "fantasma" del vecchio collegamento non blocca il rientro veloce
-  if(!sure&&room.presence&&room.presence[role]===true){UI.toMpcSetup();askConfirm(T.mp_err_full,()=>{});return;}
+  if(!sure&&room.presence&&room.presence[role]===true){UI.toMpcList();askConfirm(T.mp_err_full,()=>{});return;}
   const ref=db.ref('cups/'+mk.code);
   MPC={role,code:mk.code,ref,cid:mk.cid,offRefs:[],cfg:room.cfg,picks:[],guestIn:!!room.guest,started:false,simSent:{},duelInit:{},resCache:{},armedDuel:null,keepFor:null,
        names:{h:room.cfg.hn||'',g:(room.guest&&room.guest.n)||''}};
@@ -4736,6 +4791,15 @@ window.UI={
   closeChooser(){$('chooser').classList.remove('show');},
   confirmYes(){const cb=confirmCb;$('confirm-modal').classList.remove('show');confirmCb=null;if(cb)cb();},
   closeConfirm(){$('confirm-modal').classList.remove('show');confirmCb=null;},
+  info(i){ // "?" contestuale (Enrico 2026-08-11): la scheda del regolamento — stessa fonte, zero testi doppi
+    const RL=T.rules||RULES, r=RL[i];if(!r)return;
+    $('info-title').textContent=r.t;
+    $('info-body').innerHTML=r.h;
+    $('info-body').scrollTop=0;
+    $('info-modal').classList.add('show');
+  },
+  infoTeams(){UI.info(teamsMode==='forza'?3:2);}, // in Squadre il ? è furbo: scheda Forza se stai guardando la Forza
+  closeInfo(){$('info-modal').classList.remove('show');},
   rematch(){if(G&&G.mp){mpRematch();return;}if(G&&G.pensTrial){startPensTrial(G.teamA,G.teamB);return;}startFriendly(G.teamA,G.teamB);}, // dal Solo rigori si ribatte un'altra serie, non una partita intera
   toSetup(){fillTeamSelects();show('scr-setup');},
   /* ===== Multiplayer: prima si sceglie la sfida (amichevole o coppa), poi i dettagli ===== */
@@ -4757,15 +4821,27 @@ window.UI={
   mpShare(){if(MP&&MP.code)shareCode(MP.code);},
   mpcShare(){if(MPC&&MPC.code)shareCode(MPC.code);},
   /* ===== Coppa multiplayer ===== */
-  toMpcSetup(){ // ramo COPPA: riprendi, entra con codice, o crea la tua
+  toMpcList(){ // INGRESSO coppa MP (Enrico 2026-08-11): stesso schema della Coppa normale — elenco, Nuova, Albo
+    const host=$('mpc-saves');
+    const tks=mpcTickets().sort((a,b)=>(b.ts||0)-(a.ts||0));
+    if(!tks.length)host.innerHTML='<div class="trow" style="opacity:.7;">'+T.mpcl_empty+'</div>';
+    else{
+      host.innerHTML=tks.map(t=>{
+        let ph=''; // come sta andando: fase letta dallo specchio locale della coppa
+        try{const m=JSON.parse(lsGet('soccercard_mpc_tour_'+t.code)||'null');
+          if(m)ph=' · '+(tourDoneT(m)?T.tl_done:(m.phase==='ko'&&m.ko?koRoundNames(m.koQual)[m.ko.stage]:T.phase_grp));}catch(e){}
+        return `<div class="career-row" data-code="${t.code}" title="${T.mpc_resume}"><b class="cn">${escHtml(t.name||T.mpc_defname)}</b><span class="cinfo">${t.code}${ph}</span>`+
+          `<button class="cbtn cdel" data-code="${t.code}" title="${T.mp_resume_x}">X</button></div>`;
+      }).join('');
+      host.querySelectorAll('.career-row').forEach(r=>r.onclick=()=>UI.mpcResume(r.dataset.code));
+      host.querySelectorAll('.cdel').forEach(b=>b.onclick=(e)=>{e.stopPropagation();UI.mpcResumeX(b.dataset.code);});
+    }
+    show('scr-mpc-list');
+  },
+  toMpcSetup(){ // creazione/ingresso con codice: ci si arriva SOLO dall'elenco
     renderMpcSetup();
     $('mpc-code').value='';
     $('mpc-pname').value=lsGet('soccercard_player_name')||''; // il nome per l'albo si scrive una volta sola
-    const tks=mpcTickets().sort((a,b)=>(b.ts||0)-(a.ts||0)); // TUTTE le coppe in tasca, una riga ciascuna
-    $('mpc-resume-list').innerHTML=tks.map(t=>
-      `<div class="career-row"><span><b>${escHtml(t.name||T.mpc_resume)}</b> · ${t.code}</span><span style="display:flex; gap:8px;">`+
-      `<button class="cbtn cres" title="${T.mpc_resume}" onclick="UI.mpcResume('${t.code}')">▶</button>`+
-      `<button class="cbtn cdel" title="${T.mp_resume_x}" onclick="UI.mpcResumeX('${t.code}')">✕</button></span></div>`).join('');
     const mn=$('mpc-name'); // il nome di default segue la lingua (senza toccare un nome scritto a mano)
     if(!mn.value||Object.keys(I18N).some(k=>I18N[k].mpc_defname===mn.value))mn.value=T.mpc_defname;
     show('scr-mpc-setup');
@@ -4792,10 +4868,10 @@ window.UI={
   mpcCancel(){ // dal draft APPENA CREATO: coppa annullata (come chiudere la sala d'attesa 1v1). Da un rientro: si esce e basta, biglietto in tasca
     if(MPC&&MPC.fresh&&!MPC.started){try{MPC.ref.child('quit').set(MPC.role);MPC.ref.update({touched:1});}catch(e){}mpcLeave(false);}
     else mpcLeave(true);
-    UI.toMpcSetup();
+    UI.toMpcList();
   },
   mpcResume(code){mpcResumeCup(code);},
-  mpcResumeX(code){mpcUnmark(code);UI.toMpcSetup();}, // lascia perdere QUELLA coppa: via biglietto e specchio, la lista si ridisegna
+  mpcResumeX(code){mpcUnmark(code);UI.toMpcList();}, // lascia perdere QUELLA coppa: via biglietto e specchio, la lista si ridisegna
   mpCancel(){ // dalla sala d'attesa: si torna alla scelta squadra
     if(MP&&MP.role==='guest'){try{MP.ref.child('guest').remove();MP.ref.child('presence/guest').remove();}catch(e){}}
     mpUnmark();
@@ -4876,14 +4952,10 @@ window.UI={
   },
   teamsCountryChanged(){renderTeamsTab();},
   teamsEraChanged(){renderTeamsTab();},
-  toCoppa(){ // tessera Coppa: l'elenco delle coppe in corso (multi-coppa 2026-08-10) —
-    // prima catapultava dentro l'unica coppa attiva e non se ne poteva iniziare una seconda.
-    if(!Object.keys(TOURS).length){UI.toTourSetup();return;} // nessuna coppa in corso: dritti al setup, l'elenco vuoto era un click inutile
+  toCoppa(){ // tessera Coppa: SEMPRE l'elenco (Enrico 2026-08-11: ingresso identico per Coppa, Coppa MP e Stagione — elenco, Nuova, Albo; il setup viene dopo)
     renderTourList();show('scr-cup-list');
   },
-  tourSetupBack(){ // ◄ dal setup: all'elenco se ci sono coppe, altrimenti alla scelta competizione (mai loop col setup)
-    if(Object.keys(TOURS).length){renderTourList();show('scr-cup-list');}else UI.toTourPick();
-  },
+  tourSetupBack(){UI.toCoppa();}, // ◄ dal setup: sempre all'elenco (come la Carriera)
   tourResume(id){ // dall'elenco: si apre QUELLA coppa
     TOUR=TOURS[id];if(!TOUR)return;
     if(TOUR.liveG&&TOUR.liveG.fin)liveRestore(TOUR.liveG); // tabellino chiuso a forza: registra subito il risultato
@@ -5019,9 +5091,10 @@ window.UI={
     renderTour();show('scr-tour');
   },
   toHistory(){const a=document.querySelectorAll('.screen.active');histFrom=a.length?a[a.length-1].id:null;renderHistory();show('scr-history');},
-  histBack(){ // ◄ dall'albo: si torna DA DOVE si era venuti (hub coppa, setup o elenco)
+  histBack(){ // ◄ dall'albo: si torna DA DOVE si era venuti (hub coppa, setup, elenco MP o elenco)
     if(histFrom==='scr-tour'&&TOUR){renderTour();show('scr-tour');}
     else if(histFrom==='scr-tour-setup')show('scr-tour-setup');
+    else if(histFrom==='scr-mpc-list')UI.toMpcList();
     else UI.toCoppa();
   },
   histWipe(){ // ripartire da zero: albo azzerato E coppa in corso eliminata — altrimenti, chiudendosi, lo ricompilerebbe da sola (Enrico 2026-08-03)
@@ -5039,7 +5112,7 @@ window.UI={
   },
   tourFinish(){ // torneo concluso: chiudi e torna alla scelta della competizione
     if(TOUR&&TOUR.mp){ // coppa multiplayer: trofeo già nello Storico, la stanza si spegne per tutti e due
-      askConfirm(T.q_mpc_finish,()=>{ if(MPC){try{MPC.ref.update({touched:1});}catch(e){}} mpcLeave(false);UI.toMpcSetup(); });
+      askConfirm(T.q_mpc_finish,()=>{ if(MPC){try{MPC.ref.update({touched:1});}catch(e){}} mpcLeave(false);UI.toMpcList(); });
       return;
     }
     askConfirm(T.q_finish_cup,()=>{ if(TOUR&&TOUR.id)delete TOURS[TOUR.id];TOUR=null;saveTours();UI.toTourPick(); }); // ogni coppa è già nell'Albo: un messaggio solo
