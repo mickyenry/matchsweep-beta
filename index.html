@@ -190,7 +190,7 @@
   #career-play{font-size:.52rem; padding:11px 14px;} /* proporzionati alle altre bottoniere dell'hub */
   #career-sim, #tour-sim, #tour-abandon, #tour-hist, #setup-hist, #cuplist-hist, #mpclist-hist, #setup-pens, #hist-wipe, #mp-join, #mpc-join, #mp-resume-btn, #mpc-resume-btn{aspect-ratio:auto !important; flex-direction:row !important; font-size:.5rem !important; padding:11px 12px !important; letter-spacing:.5px; white-space:nowrap;} /* niente quadrato: bottoni bassi, da comprimari (protagonista = solo il verde); stesse metriche delle .subtab e MAI testo a capo (Enrico 2026-08-10: "proporzionati a quelli sopra") */
   .career-row .cres{background:#1fae1f;} .career-row .cdel, #mp-resume-x, #mpc-resume-x{background:#c1121f;}
-  .trow.gday{color:var(--oro); font-family:'Segoe UI',system-ui,sans-serif; font-size:.93rem; font-weight:600; border-bottom:none; margin-top:10px;} /* Segoe come grp-h: il pixel nei titoletti di contenuto era poco leggibile (Enrico: "il gioco deve essere pulito") */
+  .trow.gday{color:var(--oro); font-family:'Segoe UI',system-ui,sans-serif; font-size:.93rem; font-weight:600; border-bottom:none; margin-top:10px; border-top:1px solid rgba(255,255,255,.16); padding-top:8px;} /* linea leggera a separare le giornate, come le sezioni dell'albo (Enrico 2026-08-11) */ /* Segoe come grp-h: il pixel nei titoletti di contenuto era poco leggibile (Enrico: "il gioco deve essere pulito") */
   /* schede (leghe/coppa/editor): tutte grigie, il BLU è la selezione e si sposta col click (2026-07-28, Enrico) */
   .ttag{opacity:.65;}
   .ttag.active{opacity:1; border-color:var(--oro); background:#1a1adf;}
@@ -697,10 +697,10 @@
     <button class="top-back top-info" onclick="UI.infoTeams()" data-i18n-title="t_info" title="Regole">?</button><button class="top-back" onclick="UI.toOptions()" data-i18n-title="t_options" title="Opzioni">◄</button>
     <div class="phead" data-i18n="teams_head">👕 Configurazione squadre</div>
     <div class="rules-note" id="teams-msg-top" style="margin:8px 0 4px;"></div>
-    <label data-i18n="lbl_country">Paese</label>
-    <select id="team-country" onchange="UI.teamsCountryChanged()"></select>
     <label data-i18n="lbl_era">Epoca</label>
     <select id="team-era" onchange="UI.teamsEraChanged()"></select>
+    <label data-i18n="lbl_country">Paese</label>
+    <select id="team-country" onchange="UI.teamsCountryChanged()"></select>
     <div class="btn-row2" style="margin-top:10px;">
       <button class="b90 c-gray wide ttag active" id="tab-rosa" onclick="UI.teamsTab('rosa')" data-i18n="tab_rosa">👕 Rosa</button>
       <button class="b90 c-gray wide ttag" id="tab-forza" onclick="UI.teamsTab('forza')" data-i18n="tab_forza">💪 Forza</button>
@@ -1385,11 +1385,11 @@ I18N.it={
  teams_head:'Configurazione squadre', lbl_country:'Paese', tab_rosa:'Rosa', tab_forza:'Forza', tab_custom:'Inventata',
  btn_save:'Salva', btn_csv_ex:'Scarica rose (CSV)', btn_csv_im:'Importa rose (CSV)',
  teams_note:'I numeri 2–10 sono i marcatori. Le modifiche valgono per le prossime partite. Per rinominare tutto in blocco: scarica il CSV, aprilo in Excel, modifica nomi/rose/forza e reimportalo (salva come "CSV UTF-8"; non toccare CODICE ed EPOCA).',
- ed_fixed:'Club (nome fisso)', ed_kit:'Maglia', ed_players:'Giocatori (2–10) — {0}',
+ ed_fixed:'Club', ed_kit:'Maglia', ed_players:'Giocatori',
  ed_slot1:'Questa è la tua squadra inventata (al posto di <b>{0}</b>). Si modifica dalla scheda "Inventata".',
  ed_slot2:'Squadra inventata: la forza si regola dalla scheda "Inventata".',
  f_att:'⚔️ Attacco', f_dif:'🛡️ Difesa', f_vis:'🧠 Lucidità',
- cu_name:'Nome squadra inventata', cu_players:'Giocatori (2–10)', cu_target:'Prende il posto di',
+ cu_name:'Nome squadra inventata', cu_players:'Giocatori', cu_target:'Prende il posto di',
  cu_note_on:'ATTIVA: gioca al posto di <b>{0}</b> nel suo campionato. Disabilitandola torna l\'originale, identico. Le carriere già iniziate non cambiano.',
  cu_note_off:'SPENTA: i club originali sono tutti al loro posto. Abilitandola prende il posto del club scelto (stesso campionato). Le carriere già iniziate non cambiano.',
  cu_btn_off:'Disabilita (torna {0})', cu_btn_on:'Abilita (sostituisce il club scelto)',
@@ -1459,7 +1459,7 @@ I18N.it={
  // torneo / coppa
  pick_cup:'Coppa', pick_season:'Stagione',
  ts_head:'Nuova Coppa', lbl_cupname:'Nome della coppa',
- lbl_groups:'Gironi e qualificate (sorteggio casuale)', grp_u4:'Girone unico — prime 4 alla fase finale', grp_u2:'Girone unico — prime 2 in finale',
+ lbl_groups:'Gironi e qualificate', grp_u4:'Girone unico — prime 4 alla fase finale', grp_u2:'Girone unico — prime 2 in finale',
  grp_2:'2 gironi da {0} — prime 2 in semifinale', grp_4:'4 gironi da {0} — prime 2 ai quarti', grp_h:'Girone {0}', seed_gn:'{0}ª gir. {1}',
  warn_grp:'⚠ Le squadre non si dividono in {0} gironi uguali.',
  brk_note_g:'Gironi in corso: ecco le provvisoriamente qualificate (prime {0} di ogni girone) e gli incroci previsti. Il tabellone definitivo si forma alla fine.',
@@ -1626,11 +1626,11 @@ I18N.en={
  teams_head:'Team setup', lbl_country:'Country', tab_rosa:'Squad', tab_forza:'Strength', tab_custom:'Custom',
  btn_save:'Save', btn_csv_ex:'Download squads (CSV)', btn_csv_im:'Import squads (CSV)',
  teams_note:'Numbers 2–10 are the scorers. Changes apply to upcoming matches. To rename everything in one go: download the CSV, open it in Excel, edit names/squads/strength and re-import it (save as "CSV UTF-8"; do not touch the CODICE and EPOCA columns).',
- ed_fixed:'Club (fixed name)', ed_kit:'Kit', ed_players:'Players (2–10) — {0}',
+ ed_fixed:'Club', ed_kit:'Kit', ed_players:'Players',
  ed_slot1:'This is your custom team (in place of <b>{0}</b>). Edit it in the "Custom" tab.',
  ed_slot2:'Custom team: strength is set in the "Custom" tab.',
  f_att:'⚔️ Attack', f_dif:'🛡️ Defence', f_vis:'🧠 Composure',
- cu_name:'Custom team name', cu_players:'Players (2–10)', cu_target:'Takes the place of',
+ cu_name:'Custom team name', cu_players:'Players', cu_target:'Takes the place of',
  cu_note_on:'ACTIVE: playing in place of <b>{0}</b> in its league. Disable it and the original returns, untouched. Careers already started do not change.',
  cu_note_off:'OFF: all original clubs are in place. Enable it and it takes the place of the chosen club (same league). Careers already started do not change.',
  cu_btn_off:'Disable ({0} returns)', cu_btn_on:'Enable (replaces the chosen club)',
@@ -1700,7 +1700,7 @@ I18N.en={
  // tournament / cup
  pick_cup:'Cup', pick_season:'Season',
  ts_head:'New Cup', lbl_cupname:'Cup name',
- lbl_groups:'Groups & qualifiers (random draw)', grp_u4:'Single group — top 4 to the knockout stage', grp_u2:'Single group — top 2 to the final',
+ lbl_groups:'Groups & qualifiers', grp_u4:'Single group — top 4 to the knockout stage', grp_u2:'Single group — top 2 to the final',
  grp_2:'2 groups of {0} — top 2 to the semifinals', grp_4:'4 groups of {0} — top 2 to the quarterfinals', grp_h:'Group {0}', seed_gn:'#{0} grp {1}',
  warn_grp:'⚠ The teams don\'t split into {0} equal groups.',
  brk_note_g:'Group stage in progress: these are the provisional qualifiers (top {0} of each group) and the planned pairings. The final bracket forms at the end.',
@@ -2642,7 +2642,7 @@ var histFrom=null; // da quale schermata si è aperto l'Albo d'oro: il ◄ ripor
 function injectPaper(){
   const oggi=new Date().toLocaleDateString('it-IT',{month:'long',year:'numeric'});
   const htmlFor=id=>`<div class="pb-head">MATCH<span class="tred">SWEEP!</span></div>
-    <div class="pb-sub">★ Summer Edition v. 1.2 · 10 ago ★</div><!-- NUMERO DI BUILD VISIBILE: aggiornarlo A OGNI pubblicazione (v1.2 = nuovo hub Stagione) -->
+    <div class="pb-sub">★ Summer Edition v. 1.0 · 11 ago ★</div><!-- NUMERO DI BUILD VISIBILE: aggiornarlo A OGNI pubblicazione (v1.2 = nuovo hub Stagione) -->
     <div class="pb-rule"></div>
     ${id==='scr-menu'?`<div class="pb-headline" data-i18n="headline">Clamoroso al Cibali!</div>`:''}
     <div class="pb-cols"><div class="pb-col"></div><div class="pb-col"></div><div class="pb-col"></div><div class="pb-col"></div></div>
@@ -4795,8 +4795,8 @@ window.UI={
     const RL=T.rules||RULES, r=RL[i];if(!r)return;
     $('info-title').textContent=r.t;
     $('info-body').innerHTML=r.h;
-    $('info-body').scrollTop=0;
     $('info-modal').classList.add('show');
+    $('info-body').scrollTop=0; // DOPO lo show: su elemento nascosto lo scroll non si azzera (visto da Enrico: si apriva a metà)
   },
   infoTeams(){UI.info(teamsMode==='forza'?3:2);}, // in Squadre il ? è furbo: scheda Forza se stai guardando la Forza
   closeInfo(){$('info-modal').classList.remove('show');},
