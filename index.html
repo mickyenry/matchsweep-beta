@@ -211,7 +211,7 @@
   .pick-list{display:grid; grid-template-columns:1fr 1fr; gap:7px;}
   .pick{display:flex; align-items:center; gap:9px; background:#141414; border:2px solid #555; padding:8px 10px; font-size:.9rem; cursor:pointer; color:#fff; margin:0; text-transform:none; letter-spacing:0; font-family:'Segoe UI',sans-serif;}
   .pick input{width:auto;}
-  .pick-country{grid-column:1/-1; font-family:var(--px); font-size:.5rem; color:var(--oro); letter-spacing:1px; margin-top:8px; text-transform:uppercase;}
+  .pick-country{text-transform:uppercase; grid-column:1/-1; font-family:var(--px); font-size:.5rem; color:var(--oro); letter-spacing:1px; margin-top:8px; text-transform:uppercase;}
   .b90:not(.mdis):hover{filter:brightness(1.15); border-color:var(--oro); transform:none;}
   .c-orange{background:#cf7a12;}
   .c-gray{background:#8f8f8f;}
@@ -619,7 +619,7 @@
     <input type="text" id="mpc-name" value="Coppa tra amici" maxlength="24">
     <label data-i18n="lbl_cupera">Epoca della coppa</label>
     <select id="mpc-era"></select>
-    <label data-i18n="lbl_parts">Squadre partecipanti</label>
+    <label data-i18n="lbl_parts" id="mpc-parts-lbl">Squadre partecipanti</label>
     <select id="mpc-nat" style="margin-bottom:8px;"></select><!-- tendina nazioni: meno scorrimento (Enrico 2026-08-11) -->
     <div id="mpc-teams-pick" class="pick-list"></div>
     <label data-i18n="mpc_lbl_per">Squadre controllate da ciascun giocatore</label>
@@ -916,7 +916,7 @@
     <input type="text" id="tour-name" value="Coppa" maxlength="24">
     <label data-i18n="lbl_cupera">Epoca della coppa</label>
     <select id="tour-era"></select>
-    <label data-i18n="lbl_parts">Squadre partecipanti</label>
+    <label data-i18n="lbl_parts" id="tour-parts-lbl">Squadre partecipanti</label>
     <select id="tour-nat" style="margin-bottom:8px;"></select><!-- tendina nazioni: meno scorrimento (Enrico 2026-08-11) -->
     <div id="tour-teams-pick" class="pick-list"></div>
     <label data-i18n="lbl_yourteam">La tua squadra</label>
@@ -1362,7 +1362,7 @@ I18N.it={
  mcopy_mp:'Multiplayer: sfida un amico, ognuno dal suo dispositivo',
  mp_fr_head:'Amichevole in due',
  mpc_havecode:"Hai un codice? Entra nella coppa dell'amico",
- mpc_lbl_pname:"Il tuo nome (per l'albo d'oro, facoltativo)",
+ mpc_lbl_pname:"Il tuo nome (per l'albo d'oro)",
  mpc_redirected:"È il codice di una COPPA: ti ho portato nella schermata giusta. Controlla il tuo nome (per l'albo) e premi Entra.",
  btn_histwipe:"🗑 Azzera l'albo",
  q_hist_wipe:"Vuoi azzerare l'Albo d'oro? Si riparte da zero, e le eventuali coppe in solitaria in corso vengono eliminate (altrimenti, chiudendosi, lo ricompilerebbero da sole).",
@@ -1418,7 +1418,7 @@ I18N.it={
  tipo_cup:'Coppa', tipo_league:'Campionato',
  // partita
  btn_exit:'Esci',
- goalBig:'GOL!', gk_name:'Portiere', chooser_cancel:'Annulla', c_yes:'Sì', c_no:'No',
+ goalBig:'GOL!', penSaveBig:'PARATA!', gk_name:'Portiere', chooser_cancel:'Annulla', c_yes:'Sì', c_no:'No',
  int_head:'Intervallo', btn_2nd:'Inizia il 2° tempo',
  fin_head:'Fine partita', btn_rematch:'Rigioca', btn_tourback:'Continua', btn_careerback:'Continua', btn_menu:'Menu',
  strip_pen:'⚽ RIGORE', strip_fk:'ASSIST',
@@ -1603,7 +1603,7 @@ I18N.en={
  mcopy_mp:'Multiplayer: challenge a friend, each on your own device',
  mp_fr_head:'Two-player friendly',
  mpc_havecode:"Got a code? Join your friend's cup",
- mpc_lbl_pname:'Your name (for the hall of fame, optional)',
+ mpc_lbl_pname:'Your name (for the hall of fame)',
  mpc_redirected:"That's a CUP code: I've taken you to the right screen. Check your name (for the hall of fame) and press Join.",
  btn_histwipe:'🗑 Reset hall of fame',
  q_hist_wipe:'Reset the Hall of fame? It starts over from scratch, and any solo cups in progress are deleted too (otherwise they would refill it when they end).',
@@ -1659,7 +1659,7 @@ I18N.en={
  tipo_cup:'Cup', tipo_league:'League',
  // match
  btn_exit:'Quit',
- goalBig:'GOAL!', gk_name:'Goalkeeper', chooser_cancel:'Cancel', c_yes:'Yes', c_no:'No',
+ goalBig:'GOAL!', penSaveBig:'SAVED!', gk_name:'Goalkeeper', chooser_cancel:'Cancel', c_yes:'Yes', c_no:'No',
  int_head:'Half-time', btn_2nd:'Start the 2nd half',
  fin_head:'Full time', btn_rematch:'Rematch', btn_tourback:'Continue', btn_careerback:'Continue', btn_menu:'Menu',
  strip_pen:'⚽ PENALTY', strip_fk:'ASSIST',
@@ -2121,14 +2121,21 @@ function refreshTourUser(){
 function qualFor(nG,n){return nG===1?(n>=4?4:2):nG===2?4:8;} // qualificate DERIVATE dai gironi: via due tendine (Enrico 2026-08-08: "2 opzioni e non 4")
 function refreshGroupsSel(gsel,n){ // opzioni gironi valide per n squadre spuntate (solo gruppi uguali); l'etichetta dice già le qualificate
   if(!gsel)return;
-  const prev=+gsel.value||1, opts=groupOptionsFor(n);
-  gsel.innerHTML='';
-  opts.forEach(k=>{
-    const o=document.createElement('option');o.value=k;
-    o.textContent=k===1?(n>=4?T.grp_u4:T.grp_u2):k===2?fmt(T.grp_2,n/2):fmt(T.grp_4,n/4);
-    gsel.appendChild(o);
+  const prev=gsel.value, opts=[];
+  groupOptionsFor(n).forEach(k=>{
+    if(k===1){ if(n>=4){opts.push(['1',T.grp_u4]);opts.push(['1f',T.grp_u2]);} else opts.push(['1',T.grp_u2]); } // con 4+ squadre ANCHE "prime 2 in finale" (Enrico 2026-08-11)
+    else if(k===2)opts.push(['2',fmt(T.grp_2,n/2)]);
+    else opts.push(['4',fmt(T.grp_4,n/4)]);
   });
-  gsel.value=opts.includes(prev)?prev:1;
+  gsel.innerHTML='';
+  opts.forEach(([v,l])=>{const o=document.createElement('option');o.value=v;o.textContent=l;gsel.appendChild(o);});
+  gsel.value=opts.some(x=>x[0]===prev)?prev:'1';
+}
+function groupsChoice(gsel,n){ // legge la tendina: {nG, qual} — '1f' = girone unico con SOLE prime 2 in finale
+  const v=gsel?gsel.value:'1';
+  if(v==='1f')return {nG:1,qual:2};
+  const nG=+v||1;
+  return {nG,qual:qualFor(nG,n)};
 }
 function fillTeamSelects(){
   ['sel-me','sel-ai'].forEach((id,k)=>{const s=$(id);if(s)fillGrouped(s,k);});
@@ -2498,14 +2505,16 @@ function natFilterCounts(selId,hostId){ // le SPUNTE NASCOSTE si vedono sempre: 
   [...sel.options].forEach(o=>{
     const cbs=o.value==='ALL'?host.querySelectorAll('label.pick[data-co] input'):host.querySelectorAll('label.pick[data-co="'+o.value+'"] input');
     const n=[...cbs].filter(c=>c.checked).length;
-    o.textContent=(o.value==='ALL'?T.nat_all:coLbl(o.value))+(n?' ('+n+')':'');
+    o.textContent=(o.value==='ALL'?T.nat_all:coLbl(o.value).toUpperCase())+(n?' ('+n+')':''); // nazioni MAIUSCOLE, "Tutte le nazioni" minuscolo (Enrico 2026-08-11)
   });
+  const lbl=$(selId.replace('-nat','-parts-lbl')); // contatore GENERALE sull'etichetta: "Squadre partecipanti (7)"
+  if(lbl){const tot=[...host.querySelectorAll('label.pick[data-co] input')].filter(c=>c.checked).length;lbl.textContent=T.lbl_parts+(tot?' ('+tot+')':'');}
 }
 function natFilterInit(selId,hostId,allId){ // TENDINA NAZIONI nei setup coppa (Enrico 2026-08-11): si vede una nazione
   // alla volta (niente scroll chilometrico); le SPUNTE restano anche sulle squadre nascoste. "Tutte" per la vista completa.
   const sel=$(selId),host=$(hostId);if(!sel)return;
   const cs=Object.keys(teamsByCountry());
-  sel.innerHTML=`<option value="ALL">${T.nat_all}</option>`+cs.map(c=>`<option value="${escHtml(c)}">${coLbl(c)}</option>`).join('');
+  sel.innerHTML=`<option value="ALL">${T.nat_all}</option>`+cs.map(c=>`<option value="${escHtml(c)}">${coLbl(c).toUpperCase()}</option>`).join('');
   sel.value=cs[0]; // si parte dalla prima nazione: lista corta
   const apply=()=>{const v=sel.value;host.querySelectorAll('[data-co]').forEach(el=>{el.style.display=(v==='ALL'||el.dataset.co===v)?'':'none';});
     if(allId&&$(allId)){const cbs=[...host.querySelectorAll('label.pick[data-co]')].filter(l=>v==='ALL'||l.dataset.co===v).map(l=>l.querySelector('input'));$(allId).checked=cbs.length>0&&cbs.every(c=>c.checked);}
@@ -2514,7 +2523,7 @@ function natFilterInit(selId,hostId,allId){ // TENDINA NAZIONI nei setup coppa (
 }
 function renderTourSetup(){
   const host=$('tour-teams-pick');host.innerHTML='';
-  host.insertAdjacentHTML('beforeend',`<label class="pick" style="border-color:var(--oro); grid-column:1/-1;"><input type="checkbox" id="tt-all"> ${T.sel_all}</label>`);
+  host.insertAdjacentHTML('beforeend',`<label class="pick" style="grid-column:1/-1;"><input type="checkbox" id="tt-all"> ${T.sel_all}</label>`);
   Object.entries(teamsByCountry()).forEach(([c,list])=>{
     host.insertAdjacentHTML('beforeend',`<div class="pick-country" data-co="${escHtml(c)}">${coLbl(c)}</div>`);
     list.forEach(i=>host.insertAdjacentHTML('beforeend',`<label class="pick" data-co="${escHtml(c)}"><input type="checkbox" id="tt-${i}"> ${CLUBS[i].club}</label>`));
@@ -2605,7 +2614,7 @@ function renderTour(){
     for(let k=0;k<nG;k++){ // una classifica per girone (girone unico: una sola, senza intestazione)
       const st=tourStandings(nG>1?k:undefined);
       if(nG>1)hub+=`<div class="trow gday">${fmt(T.grp_h,grpLetter(k))}</div>`;
-      hub+=`<table class="ttab"><tr><th class="tn">${T.tblh[0]}</th>${T.tblh.slice(1).map(x=>`<th>${x}</th>`).join('')}</tr>`+
+      hub+=`<table class="ttab" style="table-layout:fixed;"><tr><th class="tn" style="width:32%;">${T.tblh[0]}</th>${T.tblh.slice(1).map(x=>`<th>${x}</th>`).join('')}</tr>` /* layout FISSO: con 2+ gironi le colonne restano allineate tra le tabelle (Enrico 2026-08-11) */+
         st.map(s=>`<tr class="${tourMine(s.i)?'me':''}"><td class="tn">${s.name}</td><td><b>${s.Pt}</b></td><td>${s.P}</td><td>${s.V}</td><td>${s.N}</td><td>${s.S}</td><td>${s.GF}</td><td>${s.GS}</td><td>${s.GF-s.GS}</td></tr>`).join('')+`</table>`;
     }
   }else if(currentTourTab==='marc'){
@@ -2779,6 +2788,14 @@ async function showGoal(r){
   $('goal-overlay').classList.remove('show');
 }
 
+async function showPenFlash(r){ // GOL!/PARATA! a tutto schermo anche dal dischetto — stesso overlay del gol in partita
+  const team=r.matched?(r.side==='me'?G.names.me:G.names.ai):(r.side==='me'?G.names.ai:G.names.me); // gol = chi risponde; parata = merito di chi ha lanciato
+  $('goal-big').innerHTML=r.matched?`<span class="gball">⚽</span>${T.goalBig}`:`<span class="gball">🧤</span>${T.penSaveBig}`;
+  $('goal-who').textContent=team;
+  $('goal-overlay').classList.add('show');
+  await sleep(1400);
+  $('goal-overlay').classList.remove('show');
+}
 function onMyCard(i){
   if(busy||G.turn!=='me')return;
   if(G.pens){ // rigori a carte scoperte: lancio libero; in risposta la carta uguale è GOL ed è obbligatoria (il click su qualsiasi carta la gioca); in oltranza stessa regola, 5 carte a testa
@@ -2830,9 +2847,10 @@ async function doPlay(side,handIdx,optIdx){
   renderAll(r.laid);
   logMove(r);
   if(r.newRound)addLog(`<span class="evt">${T.log_newround}</span>`);
-  if(r.scopa&&!G.pens)await showGoal(r); // il gol dei rigori si festeggia in cronaca, non con l'overlay dei marcatori
+  if(r.scopa&&!G.pens)await showGoal(r); // in partita: overlay marcatori come sempre
+  if(G.pens&&r.dive)await showPenFlash(r); // ai rigori: GOL!/PARATA! a tutto schermo (Enrico 2026-08-11)
   if(G.pens&&r.dive&&!r.endOfHalf&&G.pens.t.me===5&&G.pens.t.ai===5&&!G.pens.oltre){G.pens.oltre=true;showFieldNote(T.fn_sudden,T.fn_sudden2);} // 5-5: si va a oltranza (r.dive = la risposta che risolve)
-  if(G.pens&&r.dive&&!r.endOfHalf){await sleep(1200);G.table=[];renderAll();} // la coppia risolta si vede un attimo, poi VIA dal tavolo — presa del portiere o palla in rete (fix 2026-08-10: restava lì e sembrava tutto fermo)
+  if(G.pens&&r.dive&&!r.endOfHalf){await sleep(500);G.table=[];renderAll();} // la coppia risolta resta un attimo (l'overlay ha già dato il tempo), poi VIA dal tavolo
   if(r.endOfHalf){endHalf();return;}
   if(G.turn==='ai'){
     if(G.mp){busy=false;mpPump();return;} // multiplayer: niente IA, si aspetta la mossa vera dell'avversario
@@ -4253,7 +4271,7 @@ function refreshMpcPer(){ // squadre a testa: nessun tetto fisso — fino a MET�
 }
 function renderMpcSetup(){
   const host=$('mpc-teams-pick');host.innerHTML='';
-  host.insertAdjacentHTML('beforeend',`<label class="pick" style="border-color:var(--oro); grid-column:1/-1;"><input type="checkbox" id="mc-all"> ${T.sel_all}</label>`);
+  host.insertAdjacentHTML('beforeend',`<label class="pick" style="grid-column:1/-1;"><input type="checkbox" id="mc-all"> ${T.sel_all}</label>`);
   Object.entries(teamsByCountry()).forEach(([c,list])=>{
     host.insertAdjacentHTML('beforeend',`<div class="pick-country" data-co="${escHtml(c)}">${coLbl(c)}</div>`);
     list.forEach(i=>host.insertAdjacentHTML('beforeend',`<label class="pick" data-co="${escHtml(c)}"><input type="checkbox" id="mc-${i}"> ${CLUBS[i].club}</label>`));
@@ -4316,8 +4334,7 @@ function mpcHostHook(){ // l'amico è entrato: il draft comincia
 async function mpcCreateCup(){
   const sel=CLUBS.map((c,i)=>$('mc-'+i)&&$('mc-'+i).checked?i:-1).filter(i=>i>=0);
   const per=+$('mpc-per').value, era=$('mpc-era').value, double=$('mpc-formula').value==='2';
-  const nG=+$('mpc-groups').value||1, koD=double?1:0; // una formula per tutta la coppa
-  const qual=qualFor(nG,sel.length); // derivate, come in solitaria
+  const gc=groupsChoice($('mpc-groups'),sel.length), nG=gc.nG, qual=gc.qual, koD=double?1:0; // '1f' = girone unico, prime 2 in finale
   if(sel.length<2){$('mpc-msg').textContent=T.warn_2;return;}
   if(sel.length<per*2){$('mpc-msg').textContent=fmt(T.mpc_warn_per,per*2);return;}
   if(nG>1&&(sel.length%nG||qual/nG>sel.length/nG)){$('mpc-msg').textContent=fmt(T.warn_grp,nG);return;}
@@ -4842,6 +4859,7 @@ window.UI={
     renderMpcSetup();
     $('mpc-code').value='';
     $('mpc-pname').value=lsGet('soccercard_player_name')||''; // il nome per l'albo si scrive una volta sola
+    $('mpc-pname').oninput=()=>lsSet('soccercard_player_name',$('mpc-pname').value.trim().slice(0,14)); // e si salva mentre lo scrivi: resta anche se esci senza creare (Enrico 2026-08-11)
     const mn=$('mpc-name'); // il nome di default segue la lingua (senza toccare un nome scritto a mano)
     if(!mn.value||Object.keys(I18N).some(k=>I18N[k].mpc_defname===mn.value))mn.value=T.mpc_defname;
     show('scr-mpc-setup');
@@ -4979,8 +4997,7 @@ window.UI={
     const user=+$('tour-user').value;
     if(!sel.includes(user))sel.push(user);
     if(sel.length<2){$('tour-msg').textContent=T.warn_2;return;}
-    const era=$('tour-era').value, nG=+$('tour-groups').value||1;
-    const qual=qualFor(nG,sel.length); // derivate: girone unico→4 (o 2 se poche), 2 gironi→semifinali, 4 gironi→quarti
+    const era=$('tour-era').value, gc=groupsChoice($('tour-groups'),sel.length), nG=gc.nG, qual=gc.qual; // '1f' = girone unico, prime 2 in finale
     if(nG>1&&(sel.length%nG||qual/nG>sel.length/nG)){$('tour-msg').textContent=fmt(T.warn_grp,nG);return;}
     const teams=sel.map(i=>mkTeam(i,era)); // tutte della stessa epoca
     const grp=nG>1?mkGroupAssign(teams.length,nG):teams.map(()=>0); // sorteggio dei gironi
