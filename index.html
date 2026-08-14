@@ -375,7 +375,7 @@
   .news-sheet .pb-sub{color:#6b3d32;} /* inchiostro caldo sulla carta antica */
   .news-sheet .pb-headline{margin-top:8px; line-height:1.15;}
   .news-score{font-family:var(--px); font-size:2rem; text-align:center; color:#141414; margin:12px 0 2px;}
-  .news-score .news-dcr{display:block; font-size:1.05rem; letter-spacing:1px; color:#333; margin-top:8px;} /* il verdetto dei rigori sotto il punteggio, su riga sua; 1.05rem (Enrico 2026-08-10: prima sbordava, poi .72 troppo piccolo) */
+  .news-score .news-dcr{display:block; font-size:1.4rem; letter-spacing:1px; color:#222; margin-top:8px;} /* il verdetto dei rigori sotto il punteggio, su riga sua; 1.05rem (Enrico 2026-08-10: prima sbordava, poi .72 troppo piccolo) */
   .news-sub{text-align:center; color:#5a5648; font-size:.95rem; margin-bottom:8px;}
   /* due foto da collage di redazione, leggermente storte; didascalie legate ai FATTI della partita */
   .news-photos{display:flex; gap:14px; justify-content:center; align-items:flex-start; margin:14px auto 6px; width:96%;}
@@ -450,6 +450,10 @@
     .panel90 .phead{padding:0 46px;}
     .top-back{top:10px; right:12px;}
     .top-info{right:54px;}
+    /* intervallo/tabellino su telefono: nomi più piccoli, il punteggio resta protagonista (Enrico 2026-08-14: si coprivano) */
+    .tvline{gap:8px;}
+    .tvteam{font-size:.82rem; line-height:1.25;}
+    .tvscore{font-size:1.3rem;}
     /* F3 — classifiche: 9 colonne non stanno in 375px → GF e GS nascoste (Pt G V N P e DR restano).
        Vale per TUTTE le .ttab: sono solo classifiche (lega 9 col / gironi Euro 8 col), GF-GS sempre in 7ª-8ª posizione */
     .ttab td:nth-child(7), .ttab th:nth-child(7), .ttab td:nth-child(8), .ttab th:nth-child(8){display:none;}
@@ -1061,16 +1065,16 @@ function startHalf(G,half){
 }
 function isLastPlay(G){return G.deck.length===0&&G.hands.me.length===0&&G.hands.ai.length===0;}
 
-/* CALCI DI RIGORE — GOL=MATCH (regola definitiva di Enrico, 2026-08-10). 10 carte a testa da un mazzo
-   nuovo, TUTTE le carte scoperte. Uno LANCIA la sua carta a faccia in su; l'altro è sul dischetto:
-   SE HA LA CARTA UGUALE la gioca (obbligatoria, è la presa) ed è GOL SUO — il punteggio sale SOLO col
-   match; altrimenti scarta una carta SPRECATA e il rigore è fallito. 5 lanci + 5 risposte a testa
-   (10 carte esatte), stop appena la serie è decisa; dal 6° OLTRANZA: 5 carte nuove a testa, stessa
-   regola, finché uno segna e l'altro no. Tabellone TV nello scoreboard: 🟢 gol / 🔴 fallito / ⚪ da battere. */
+/* CALCI DI RIGORE — REGOLA DEFINITIVA (Enrico 2026-08-12): TUTTE le carte scoperte, 5 CARTE ALLA VOLTA
+   a testa (nuove 5 quando finiscono). Il TIRATORE lancia a faccia in su; il PORTIERE para SOLO SE HA LA
+   CARTA UGUALE (obbligatoria, è la presa) — senza gemella scarta una carta SPRECATA ed è GOL DEL TIRATORE.
+   Con 5 carte la copertura del portiere è scarsa: gol ~77%, come nel calcio vero (misurato su 6000 serie;
+   con 10 carte era 64%). 5 rigori a testa, stop appena decisa; dal 6° OLTRANZA, stessa regola.
+   Tabellone TV nello scoreboard: 🟢 gol / 🔴 parato / ⚪ da battere. */
 function startShootout(G){
   const deck=shuffle(buildDeck(),G.rnd);
   deck.forEach(c=>{if(c.v===1)c.kind='rigore';}); // ai rigori ogni asso è un rigore
-  const nCards=G.pens?5:10; // oltranza (Enrico 2026-08-10): 5 carte nuove a testa, STESSA regola — niente sorte
+  const nCards=5; // 5 CARTE ALLA VOLTA, sempre (Enrico 2026-08-12): portiere a copertura scarsa = gol ~77%, realtà
   if(!G.pens){ // PRIMA serie: contatori a zero; le ricariche d'oltranza passano di qui senza toccarli
     G.half++;
     G.pens={g:{me:0,ai:0},t:{me:0,ai:0},pend:null};
@@ -1081,10 +1085,10 @@ function startShootout(G){
   G.hands=G.flip?{me:sB,ai:sA}:{me:sA,ai:sB}; // flip: come startHalf, per gli schermi specchiati del multiplayer
   G.playsInHalf=0;G.lastCapturer=null;
 }
-function pensPlay(G,side,handIdx){ // un rigore in DUE CARTE SCOPERTE (regola definitiva di Enrico, 2026-08-10):
-  // GOL = MATCH, come in tutta la partita. Chi apre lancia la sua carta a faccia in su; l'altro è sul
-  // dischetto: SE HA LA CARTA UGUALE la gioca (obbligatoria, è la presa) ed è GOL SUO; se non ce l'ha
-  // scarta comunque una carta — sprecata — e il rigore è fallito. Il punteggio sale SOLO col match.
+function pensPlay(G,side,handIdx){ // un rigore in DUE CARTE SCOPERTE (regola ROVESCIATA, Enrico 2026-08-12):
+  // il TIRATORE lancia la sua carta a faccia in su; il PORTIERE para SOLO SE HA LA CARTA UGUALE
+  // (la gioca per forza: è la presa) — altrimenti scarta una carta sprecata ed è GOL DEL TIRATORE.
+  // Così i gol (~2/3) superano le parate, come nel calcio vero; provata prima l'attribuzione opposta: troppo avara.
   const P=G.pens, other=side==='me'?'ai':'me';
   const r={side,captured:[],scopa:false,laid:false,endOfHalf:false,newRound:false,pen:true};
   if(!P.pend){ // LANCIO, a carta scoperta: l'altro proverà a matchare (anche in oltranza si SCEGLIE — Enrico 2026-08-10: via la sorte, stessa regola sempre)
@@ -1102,15 +1106,16 @@ function pensPlay(G,side,handIdx){ // un rigore in DUE CARTE SCOPERTE (regola de
   r.card=card;
   G.table=[P.pend,card];
   if(G.seen)G.seen[card.v]=(G.seen[card.v]||0)+1;
-  const match=(card.v===P.pend.v);
-  r.dive=true;r.matched=match;r.shooter=side; // segna CHI RISPONDE, solo col match
-  P.t[side]++;
-  if(!P.hist)P.hist={me:[],ai:[]};P.hist[side].push(match); // storico per il tabellone TV (🟢 gol / 🔴 fallito)
-  if(match){P.g[side]++;G.score[side]++;r.scopa=true;} // GOL = MATCH: il contratto resta quello di sempre (G.score, scorporato a fine serie)
+  const match=(card.v===P.pend.v); // REGOLA ROVESCIATA (Enrico 2026-08-12, per avvicinare i gol alla realtà):
+  // il MATCH è la PARATA del portiere (la presa, obbligatoria); se il portiere NON ha la carta uguale è GOL del TIRATORE.
+  r.dive=true;r.matched=match;r.shooter=other; // il rigore è di chi ha LANCIATO
+  P.t[other]++;
+  if(!P.hist)P.hist={me:[],ai:[]};P.hist[other].push(!match); // tabellone TV: 🟢 gol del tiratore / 🔴 parato
+  if(!match){P.g[other]++;G.score[other]++;r.scopa=true;} // GOL al tiratore; contratto G.score come sempre
   P.pend=null;
   const gm=P.g.me,ga=P.g.ai,tm=P.t.me,ta=P.t.ai;
   if((tm<=5&&ta<=5&&(gm>ga+(5-ta)||ga>gm+(5-tm)))||(tm>5&&tm===ta&&gm!==ga))r.endOfHalf=true; // decisa: aritmetica nei 5, coppia spaiata in oltranza
-  else if(G.hands.me.length===0&&G.hands.ai.length===0)startShootout(G); // 5 tiri + 5 risposte = mani vuote esatte: in oltranza nuove 10 a testa (stesso seme = identica in MP)
+  else if(G.hands.me.length===0&&G.hands.ai.length===0)startShootout(G); // mani vuote → NUOVE 5 a testa, anche a metà dei regolamentari (stesso seme = identica in MP)
   G.playsInHalf++;
   G.turn=side; // chi ha appena risposto va sul dischetto: tiro A, risposta B, tiro B, risposta A…
   return r;
@@ -1196,7 +1201,7 @@ function aiChoose(G,side){
     }
     const cands=hand.map((c,i)=>({handIdx:i,optIdx:0,score:-avail(c.v)+rnd()*1.4}));
     cands.sort((a,b)=>b.score-a.score);
-    return pickBySkill(cands,f.dif,rnd); // il lancio è una giocata difensiva
+    return pickBySkill(cands,f.att,rnd); // il lancio è il TIRO: valori con poche copie vive = gol probabile
   }
   // PERICOLO di lasciare un tavolo che somma R: proporzionale alle COPIE di R ancora in giro
   // (contate dalla Lucidità; chi non conta stima la media). Stessa scala per prese e scarti:
@@ -1432,14 +1437,14 @@ I18N.it={
  log_take:'<b>{0}</b> gioca il {1} e prende {2}',
  log_scopa:' — <b style="color:var(--oro)">SCOPA! GOL!</b>',
  log_newround:'— Fine giro: il mazzo distribuisce 3 nuove carte a testa (quelle sul tavolo restano) —',
- log_shootout:'⚽ Calci di rigore — 5 a testa, carte scoperte: GOL solo con la carta uguale, come sempre. Poi oltranza.',
- log_pen_shot:'{0} lancia il {1}…', log_pen_save:'🧤 Niente carta uguale: {0} spreca e sbaglia il rigore', log_pen_goal:'⚽ GOL! {0} ha la carta uguale ({1}-{2})',
+ log_shootout:'⚽ Calci di rigore — 5 a testa, carte scoperte: para solo la carta uguale. Poi oltranza.',
+ log_pen_shot:'{0} tira il {1}…', log_pen_save:'🧤 PARATA! {0} ha la carta uguale', log_pen_goal:'⚽ GOL! {0} spiazza il portiere ({1}-{2})',
  fn_sudden:'⚽ OLTRANZA!', fn_sudden2:'5 carte nuove a testa, stessa regola',
  fn_kickoff:"🪙 CALCIO D'INIZIO", fn_kick2:'Monetina: inizia {0}{1}',
  fn_2half:'2° TEMPO', fn_2half2:'Inizia {0}{1}',
  fn_extra:'SUPPLEMENTARI!', fn_extra2:'Se resta pari, calci di rigore — inizia {0}{1}',
- fn_pens:'⚽ RIGORI!', fn_pens2:'5 a testa, carte scoperte: GOL con la carta uguale{0}',
- fn_touch:' — tocca il campo per iniziare',
+ fn_pens:'⚽ RIGORI!', fn_pens2:'para solo la carta uguale{0}',
+ fn_touch:' — tocca il campo',
  ch_title:'Giochi il {0}{1}', ch_multi:'può prendere in più modi: scegli.', ch_scopa:'SCOPA!',
  no_scorers:'Nessun marcatore',
  res_pens:'{0} passa ai rigori!', dcr:'dcr',
@@ -1673,14 +1678,14 @@ I18N.en={
  log_take:'<b>{0}</b> plays the {1} and captures {2}',
  log_scopa:' — <b style="color:var(--oro)">SWEEP! GOAL!</b>',
  log_newround:'— End of round: the deck deals 3 new cards each (table cards stay) —',
- log_shootout:'⚽ Penalty shootout — 5 each, cards face up: GOAL only with the equal card, as always. Then sudden death.',
- log_pen_shot:'{0} throws the {1}…', log_pen_save:'🧤 No matching card: {0} wastes one and misses', log_pen_goal:'⚽ GOAL! {0} matches the card ({1}-{2})',
+ log_shootout:'⚽ Penalty shootout — 5 each, cards face up: only the equal card saves. Then sudden death.',
+ log_pen_shot:'{0} shoots the {1}…', log_pen_save:'🧤 SAVED! {0} holds the equal card', log_pen_goal:'⚽ GOAL! {0} sends the keeper the wrong way ({1}-{2})',
  fn_sudden:'⚽ SUDDEN DEATH!', fn_sudden2:'a fresh 5 cards each, same rule',
  fn_kickoff:'🪙 KICK-OFF', fn_kick2:'Coin toss: {0} starts{1}',
  fn_2half:'2ND HALF', fn_2half2:'{0} starts{1}',
  fn_extra:'EXTRA TIME!', fn_extra2:'If still level, penalty shootout — {0} starts{1}',
- fn_pens:'⚽ PENALTIES!', fn_pens2:'5 each, cards face up: GOAL with the equal card{0}',
- fn_touch:' — touch the pitch to start',
+ fn_pens:'⚽ PENALTIES!', fn_pens2:'only the equal card saves{0}',
+ fn_touch:' — tap the pitch',
  ch_title:'You play the {0}{1}', ch_multi:'can capture in more than one way: choose.', ch_scopa:'SWEEP!',
  no_scorers:'No scorers',
  res_pens:'{0} go through on penalties!', dcr:'pens',
@@ -2651,7 +2656,7 @@ var histFrom=null; // da quale schermata si è aperto l'Albo d'oro: il ◄ ripor
 function injectPaper(){
   const oggi=new Date().toLocaleDateString('it-IT',{month:'long',year:'numeric'});
   const htmlFor=id=>`<div class="pb-head">MATCH<span class="tred">SWEEP!</span></div>
-    <div class="pb-sub">★ Summer Edition v. 1.0 · 11 ago ★</div><!-- NUMERO DI BUILD VISIBILE: aggiornarlo A OGNI pubblicazione (v1.2 = nuovo hub Stagione) -->
+    <div class="pb-sub">★ Summer Edition v. 1.0 · 14 ago ★</div><!-- NUMERO DI BUILD VISIBILE: aggiornarlo A OGNI pubblicazione (v1.2 = nuovo hub Stagione) -->
     <div class="pb-rule"></div>
     ${id==='scr-menu'?`<div class="pb-headline" data-i18n="headline">Clamoroso al Cibali!</div>`:''}
     <div class="pb-cols"><div class="pb-col"></div><div class="pb-col"></div><div class="pb-col"></div><div class="pb-col"></div></div>
@@ -2760,7 +2765,8 @@ function logMove(r){
     if(r.shot)txt=fmt(T.log_pen_shot,who,r.card.v===1?'A':r.card.v);
     else{
       const P=G.pens||{g:{me:0,ai:0}};
-      txt=r.matched?fmt(T.log_pen_goal,who,P.g.me,P.g.ai):fmt(T.log_pen_save,who);
+      const thrower=r.side==='me'?G.names.ai:G.names.me;
+      txt=r.matched?fmt(T.log_pen_save,who):fmt(T.log_pen_goal,thrower,P.g.me,P.g.ai);
     }
     addLog(txt);return;
   }
@@ -2789,8 +2795,8 @@ async function showGoal(r){
 }
 
 async function showPenFlash(r){ // GOL!/PARATA! a tutto schermo anche dal dischetto — stesso overlay del gol in partita
-  const team=r.matched?(r.side==='me'?G.names.me:G.names.ai):(r.side==='me'?G.names.ai:G.names.me); // gol = chi risponde; parata = merito di chi ha lanciato
-  $('goal-big').innerHTML=r.matched?`<span class="gball">⚽</span>${T.goalBig}`:`<span class="gball">🧤</span>${T.penSaveBig}`;
+  const team=r.matched?(r.side==='me'?G.names.me:G.names.ai):(r.side==='me'?G.names.ai:G.names.me); // parata = il portiere che risponde; gol = il tiratore
+  $('goal-big').innerHTML=r.matched?`<span class="gball">🧤</span>${T.penSaveBig}`:`<span class="gball">⚽</span>${T.goalBig}`;
   $('goal-who').textContent=team;
   $('goal-overlay').classList.add('show');
   await sleep(1400);
@@ -3124,7 +3130,7 @@ const RULES=[
    <h5>Supplementari</h5>
    <p>Nelle sfide da dentro-o-fuori (fase finale della Coppa, semifinali e finale della Euro Cup), se si finisce pari si gioca <b>un tempo supplementare</b> (una smazzata intera).</p>
    <h5>Calci di rigore</h5>
-   <p>Se resta ancora pari si va ai <b>rigori</b>: <b>5 a testa</b>, alternati, con 10 carte a testa da un mazzo nuovo e <b>tutte le carte scoperte</b>. La regola è quella di sempre: <b>gol = carta uguale</b>. L'avversario lancia una carta; se sul dischetto <b>hai la carta uguale</b> la giochi — presa obbligatoria, come in partita — ed è <b>GOL</b>. Se non ce l'hai, scarti comunque una carta (sprecata) e il rigore è fallito. Dieci carte, cinque lanci e cinque rigori a testa: conta cosa tieni in mano e cosa è già uscito. La serie si interrompe appena è decisa; dal sesto rigore si va a <b>oltranza</b>: 5 carte nuove a testa e stessa regola, finché uno segna e l'altro sbaglia. In alto, il tabellone dei rigori: 🟢 gol, 🔴 fallito. Il risultato ufficiale resta quello del campo (indicato con "dcr") e i gol dei rigori non contano per il capocannoniere. Vuoi allenarti? In <b>Amichevole → Solo rigori</b> vai dritto sul dischetto.</p>`}
+   <p>Se resta ancora pari si va ai <b>rigori</b>: <b>5 a testa</b>, alternati, con <b>5 carte alla volta</b> da un mazzo nuovo (altre 5 quando finiscono) e <b>tutte le carte scoperte</b>. Il <b>tiratore</b> lancia una carta scoperta; il <b>portiere</b> para <b>solo se ha la carta uguale</b> — e in quel caso la gioca, presa obbligatoria come in partita. Se non ce l'ha, scarta comunque una carta (sprecata) e il rigore è <b>GOL</b>. Segnare è più facile che parare, come nel calcio vero: tira i numeri di cui tieni le copie in mano e sarà dura trovarti la gemella. Con sole 5 carte il portiere copre poco: segnare è la norma, parare è l'impresa — e conta cosa tieni in mano e cosa è già uscito. La serie si interrompe appena è decisa; dal sesto rigore si va a <b>oltranza</b>, stessa regola, finché uno segna e l'altro no. In alto, il tabellone dei rigori: 🟢 gol, 🔴 parato. Il risultato ufficiale resta quello del campo (indicato con "dcr") e i gol dei rigori non contano per il capocannoniere. Vuoi allenarti? In <b>Amichevole → Solo rigori</b> vai dritto sul dischetto.</p>`}
 ];
 I18N.it.rules=RULES; // il regolamento italiano resta la copia master qui sopra
 I18N.en.rules=[
@@ -3185,7 +3191,7 @@ I18N.en.rules=[
    <h5>Extra time</h5>
    <p>In do-or-die matches (Cup knockout stage, Euro Cup semifinals and final), if the score is level you play <b>one period of extra time</b> (a full deal).</p>
    <h5>Penalty shootout</h5>
-   <p>If it is still level you go to <b>penalties</b>: <b>5 each</b>, alternating, with 10 cards each from a fresh deck and <b>every card face up</b>. The rule is the same as everywhere else: <b>goal = matching card</b>. Your opponent throws a card; if you <b>hold the equal card</b> you play it — a mandatory capture, just like in the match — and it is a <b>GOAL</b>. No match in hand? You still discard a card (wasted) and the penalty is missed. Ten cards, five throws and five penalties each: what you keep in hand and what has already gone matters. The shootout stops as soon as it is decided; from the sixth kick on it is <b>sudden death</b>: a fresh 5 cards each, same rule, until one scores and the other misses. Up top, the shootout board: 🟢 scored, 🔴 missed. The official result remains the one from the pitch (marked "pens") and shootout goals do not count for the top scorer award. Want practice? <b>Friendly → Penalties only</b> takes you straight to the spot.</p>`}
+   <p>If it is still level you go to <b>penalties</b>: <b>5 each</b>, alternating, with <b>5 cards at a time</b> from a fresh deck (a new 5 when they run out) and <b>every card face up</b>. The <b>shooter</b> throws a card face up; the <b>keeper</b> saves <b>only with the equal card</b> — and must play it, a mandatory capture just like in the match. No equal card in hand? He still discards one (wasted) and it is a <b>GOAL</b>. Scoring beats saving, like in real football: shoot the values whose copies you hold and the twin will be hard to find. With only 5 cards the keeper covers little: scoring is the norm, saving is the feat — and what you keep in hand and what has already gone matters. The shootout stops as soon as it is decided; from the sixth kick on it is <b>sudden death</b>, same rule, until one scores and the other doesn't. Up top, the shootout board: 🟢 scored, 🔴 saved. The official result remains the one from the pitch (marked "pens") and shootout goals do not count for the top scorer award. Want practice? <b>Friendly → Penalties only</b> takes you straight to the spot.</p>`}
 ];
 var currentRule=0;
 function renderRules(){
@@ -3953,7 +3959,7 @@ function mpRematch(){ // RIVINCITA nella stessa stanza: stesse squadre, nuova mo
    in un lampo col motore deterministico — stesse carte, stesso punteggio, stessa carta da giocare.
    L'avversario nel frattempo NON viene buttato fuori: vede "connessione persa, attendo il rientro"
    e decide lui se aspettare o uscire (niente timeout: coerente con la filosofia senza-timer). */
-const MP_PV=4; // VERSIONE DEL PROTOCOLLO MP (4 = rigori a carte scoperte con parata obbligatoria, 2026-08-10; 3 = rigori a carta coperta; 2 = gironi/fasi secche): i due client DEVONO coincidere,
+const MP_PV=6; // VERSIONE DEL PROTOCOLLO MP (6 = rigori a 5 carte alla volta, 2026-08-12; 5 = rovesciati; 4 = gol=match; 3 = coperta; 2 = gironi): i due client DEVONO coincidere,
 // altrimenti costruirebbero tornei/partite diverse in silenzio. Se non coincide: messaggio "ricaricate la pagina" e stop.
 function mpMark(){ // il biglietto porta una FIRMA unica del client (cid): due finestre sullo stesso PC condividono
   // la tasca (localStorage) e si sovrascrivono il biglietto a vicenda — al rientro il ruolo si deduce
