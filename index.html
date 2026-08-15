@@ -234,6 +234,7 @@
   #sb-score{font-size:1.9rem; color:var(--oro);}
   #sb-me-name,#sb-ai-name{font-size:.82rem;}
   #sb-exit{position:absolute; right:10px; top:50%; transform:translateY(-50%); background:#7e1420; border:2px solid #fff; padding:6px 9px; font-size:.5rem; box-shadow:3px 3px 0 rgba(0,0,0,.5);}
+  #sb-help{position:absolute; right:86px; top:50%; transform:translateY(-50%); background:#1d4ed8; border:2px solid #fff; padding:6px 9px; font-size:.5rem; color:#fff; box-shadow:3px 3px 0 rgba(0,0,0,.5); font-family:var(--px);}
   .sb-team{display:flex; align-items:center; gap:8px;}
   .dot{width:14px; height:14px; display:inline-block; border:2px solid #fff;}
   #sb-info{font-size:.55rem; font-family:var(--px); color:#7fd18b; margin-left:14px; text-align:center; line-height:1.9;}
@@ -375,7 +376,10 @@
   .news-sheet .pb-sub{color:#6b3d32;} /* inchiostro caldo sulla carta antica */
   .news-sheet .pb-headline{margin-top:8px; line-height:1.15;}
   .news-score{font-family:var(--px); font-size:2rem; text-align:center; color:#141414; margin:12px 0 2px;}
-  .news-score .news-dcr{display:block; font-family:var(--px); font-size:.8rem; letter-spacing:1px; color:#222; margin-top:12px;} /* stesso carattere pixel del punteggio, taglia subordinata (Enrico 2026-08-14: in Segoe stonava a qualsiasi dimensione) */ /* il verdetto dei rigori sotto il punteggio, su riga sua; 1.05rem (Enrico 2026-08-10: prima sbordava, poi .72 troppo piccolo) */
+  .news-score .news-dcr{display:block; font-family:var(--px); font-size:.8rem; letter-spacing:1px; color:#222; margin-top:12px;}
+  .news-score .ns-team{font-family:'Segoe UI',system-ui,sans-serif; font-size:1.3rem; font-weight:600; letter-spacing:0; vertical-align:middle;}
+  @media (max-width:480px){ .news-score{font-size:1.5rem;} .news-score .ns-team{font-size:.9rem;} }
+  .news-comment{font-family:'Segoe UI',system-ui,sans-serif; font-style:italic; font-size:.95rem; line-height:1.5; color:#2a1f1a; text-align:left; border-top:1px solid #141414; margin-top:8px; padding-top:7px;} /* stesso carattere pixel del punteggio, taglia subordinata (Enrico 2026-08-14: in Segoe stonava a qualsiasi dimensione) */ /* il verdetto dei rigori sotto il punteggio, su riga sua; 1.05rem (Enrico 2026-08-10: prima sbordava, poi .72 troppo piccolo) */
   .news-sub{text-align:center; color:#5a5648; font-size:.95rem; margin-bottom:8px;}
   /* due foto da collage di redazione, leggermente storte; didascalie legate ai FATTI della partita */
   .news-photos{display:flex; gap:14px; justify-content:center; align-items:flex-start; margin:14px auto 6px; width:96%;}
@@ -391,7 +395,8 @@
   /* nelle foto del giornale gli omini restano A COLORI (maglie vere delle squadre — richiesta Enrico);
      il filtro B/N di .pb-spr vale solo per le foto decorative dello sfondo menu */
   .news-photo .pb-spr{filter:none;}
-  .news-marc{margin-top:10px; border-top:2px solid #141414; padding-top:8px;}
+  .news-marc{margin-top:10px; border-top:2px solid #141414; padding-top:8px; display:flex; gap:26px; justify-content:center;}
+  .news-marc .nm-col{flex:1;} .news-marc .nm-h{text-align:right;} .news-marc .nm-a{text-align:left;} /* colonne strette al centro: l'occhio non salta (Enrico 2026-08-14) */
   .news-row{font-size:.95rem; padding:3px 0; color:#1a1a1a;}
   .news-row b{font-family:var(--px); font-size:.6rem; color:#c00d0d; margin-right:8px;}
 
@@ -570,13 +575,13 @@
       <select id="mp-era"></select>
       <label data-i18n="lbl_yourteam">La tua squadra</label>
       <select id="mp-team"></select>
-      <div class="btn-row2">
-        <button class="b90 c-green wide" onclick="UI.mpCreate()" data-i18n="mp_create">Crea stanza</button>
-      </div>
       <label data-i18n="mp_havecode">Hai un codice? Entra nella stanza dell'amico</label>
       <div style="display:flex; gap:10px; align-items:stretch;">
         <input id="mp-code" type="text" maxlength="12" placeholder="TORO72" autocomplete="off" style="flex:1; width:auto; min-width:0;">
         <button class="b90 c-blue" id="mp-join" onclick="UI.mpJoin()" data-i18n="mp_join">Entra</button>
+      </div>
+      <div class="btn-row2"><!-- ORDINE OMOGENEO (Enrico 2026-08-14): campi → codice/Entra → verde in fondo, come la Coppa MP e tutti i setup -->
+        <button class="b90 c-green wide" onclick="UI.mpCreate()" data-i18n="mp_create">Crea stanza</button>
       </div>
       <div class="rules-note" data-i18n-html="mp_note">Uno crea la stanza e detta il codice, l'altro entra.</div>
     </div>
@@ -599,6 +604,13 @@
     <button class="top-back top-info" onclick="UI.info(6)" data-i18n-title="t_info" title="Regole">?</button><button class="top-back" onclick="UI.toMpPick()" data-i18n-title="t_back" title="Indietro">◄</button>
     <div class="phead" data-i18n="mpc_head">🏆 Coppa multiplayer</div>
     <div id="mpc-saves" style="margin-top:8px;"></div>
+    <label data-i18n="mpc_lbl_pname">Il tuo nome (per l'albo d'oro)</label>
+    <input type="text" id="mpcl-pname" maxlength="14" autocomplete="off">
+    <label data-i18n="mpc_havecode">Hai un codice? Entra nella coppa dell'amico</label>
+    <div style="display:flex; gap:10px; align-items:stretch;">
+      <input id="mpc-code" type="text" maxlength="12" placeholder="TORO72" autocomplete="off" style="flex:1; width:auto; min-width:0;">
+      <button class="b90 c-blue" id="mpc-join" onclick="UI.mpcJoinCode()" data-i18n="mp_join">Entra</button>
+    </div>
     <div class="btn-row2">
       <button class="b90 c-green wide" onclick="UI.toMpcSetup()" data-i18n="btn_newcup">Nuova coppa</button>
       <button class="b90 c-gray" id="mpclist-hist" style="flex:0 0 auto; font-size:.5rem; padding:13px 16px;" onclick="UI.toHistory()" data-i18n="opt_history">Albo d'oro</button>
@@ -614,11 +626,6 @@
     <!-- le coppe in corso: una riga per biglietto (multi-coppa, stile lista carriere) -->
     <label data-i18n="mpc_lbl_pname">Il tuo nome (per l'albo d'oro, facoltativo)</label>
     <input type="text" id="mpc-pname" maxlength="14" autocomplete="off">
-    <label data-i18n="mpc_havecode">Hai un codice? Entra nella coppa dell'amico</label>
-    <div style="display:flex; gap:10px; align-items:stretch;">
-      <input id="mpc-code" type="text" maxlength="12" placeholder="TORO72" autocomplete="off" style="flex:1; width:auto; min-width:0;">
-      <button class="b90 c-blue" id="mpc-join" onclick="UI.mpcJoinCode()" data-i18n="mp_join">Entra</button>
-    </div>
     <label data-i18n="lbl_cupname">Nome della coppa</label>
     <input type="text" id="mpc-name" value="Coppa tra amici" maxlength="24">
     <label data-i18n="lbl_cupera">Epoca della coppa</label>
@@ -750,6 +757,7 @@
 <div id="scr-match" class="screen">
   <div id="scoreboard">
     <button id="sb-exit" onclick="event.stopPropagation();UI.quitMatch()" data-i18n="btn_exit">✖ Esci</button>
+    <button id="sb-help" style="display:none;" onclick="event.stopPropagation();UI.info(7)" data-i18n-title="t_info" title="Regole">?</button><!-- solo ai rigori: le regole del dischetto a portata di pollice (Enrico 2026-08-14) -->
     <span class="sb-team"><span class="dot kit-me"></span><span id="sb-me-name"></span></span>
     <span id="sb-score">0 - 0</span>
     <span class="sb-team"><span id="sb-ai-name"></span><span class="dot kit-ai" style="border:1px solid #555;"></span></span>
@@ -878,6 +886,7 @@
       <div class="news-photo ph2"><div class="pb-scene" id="news-scene2"></div><div class="news-cap" id="news-cap2"></div></div>
     </div>
     <div class="news-marc" id="news-marc"></div>
+    <div class="news-comment" id="news-comment"></div><!-- due righe del cronista, pescate dai fatti (Enrico 2026-08-14) -->
     <div class="btn-row">
       <button id="news-rigioca" class="b90 c-green wide" onclick="UI.rematch()" data-i18n="btn_rematch">Rigioca</button>
       <button id="news-continue" class="b90 c-orange wide" style="display:none;" onclick="UI.newsContinue()" data-i18n="btn_careerback">Continua</button>
@@ -1439,11 +1448,11 @@ I18N.it={
  log_newround:'— Fine giro: il mazzo distribuisce 3 nuove carte a testa (quelle sul tavolo restano) —',
  log_shootout:'⚽ Calci di rigore — 5 a testa, carte scoperte: para solo la carta uguale. Poi oltranza.',
  log_pen_shot:'{0} tira il {1}…', log_pen_save:'🧤 PARATA! {0} ha la carta uguale', log_pen_goal:'⚽ GOL! {0} spiazza il portiere ({1}-{2})',
- fn_sudden:'⚽ OLTRANZA!', fn_sudden2:'5 carte nuove a testa, stessa regola',
- fn_kickoff:"🪙 CALCIO D'INIZIO", fn_kick2:'Monetina: inizia {0}{1}',
+ fn_sudden:'OLTRANZA!', fn_sudden2:'5 carte nuove a testa, stessa regola',
+ fn_kickoff:"CALCIO D'INIZIO", fn_kick2:'Monetina: inizia {0}{1}',
  fn_2half:'2° TEMPO', fn_2half2:'Inizia {0}{1}',
  fn_extra:'SUPPLEMENTARI!', fn_extra2:'Se resta pari, calci di rigore — inizia {0}{1}',
- fn_pens:'⚽ RIGORI!', fn_pens2:'para solo la carta uguale{0}',
+ fn_pens:'RIGORI!', fn_pens2:'inizia {0}{1}',
  fn_touch:' — tocca il campo',
  ch_title:'Giochi il {0}{1}', ch_multi:'può prendere in più modi: scegli.', ch_scopa:'SCOPA!',
  no_scorers:'Nessun marcatore',
@@ -1529,14 +1538,27 @@ I18N.it={
  hl_gol90:["CLAMOROSO AL 90': {0}!","{0} AL 90': APOTEOSI!","ALL'ULTIMO RESPIRO: {0}!","ZONA CESARINI: COLPO DI {0}!","{0} GELA TUTTI AL 90'!"],
  hl_tris:['TRIPLETTA! {0} SHOW','{0}: TRE GOL, UN SOLO PADRONE','NOTTE DA FUORICLASSE: TRIS DI {0}','{0} SI PORTA A CASA IL PALLONE','UNO, DUE, TRE: {0}!'],
  hl_upset:['IMPRESA {0}: CADE {1}','DAVIDE BATTE GOLIA: {0}!','{0} FA LO SGAMBETTO A {1}','CLAMOROSO: {0} PIEGA {1}','LEZIONE DI CORAGGIO: {0}!'],
- hl_goleada:['{0} A VALANGA: {1}','{0} DILAGA: {1}!','CHE MANITA, {0}!','{0} SENZA PIETÀ: {1}','UN URAGANO CHIAMATO {0}: {1}'],
- hl_festival:['SPETTACOLO PURO: {0}','FESTIVAL DEL GOL: {0}','PARTITA FOLLE: FINISCE {0}!','EMOZIONI A GRAPPOLI: {0}','CHE PARTITA! {0} E TUTTI IN PIEDI'],
+ hl_goleada:['{0} A VALANGA','{0} DILAGA!','CHE MANITA, {0}!','{0} SENZA PIETÀ','UN URAGANO CHIAMATO {0}'],
+ hl_festival:['SPETTACOLO PURO','FESTIVAL DEL GOL','PARTITA FOLLE!','EMOZIONI A GRAPPOLI','CHE PARTITA! TUTTI IN PIEDI'],
  hl_derby_w:['IL DERBY È DI {0}!','DERBY: {0} SI PRENDE LA CITTÀ!','FESTA {0}: IL DERBY È TUO!','DERBY DA RICORDARE: VINCE {0}!','LA CITTÀ HA UN SOLO COLORE: {0}!'],
- hl_derby_x:['DERBY SENZA PADRONE: {0}','IL DERBY FINISCE {0}: TUTTO COME PRIMA','PARI NEL DERBY: {0}','DERBY DI NERVI: {0}','ONORE DIVISO: IL DERBY FA {0}'],
+ hl_derby_x:['DERBY SENZA PADRONE','IL DERBY FINISCE PARI: TUTTO COME PRIMA','PARI NEL DERBY','DERBY DI NERVI','ONORE DIVISO NEL DERBY'],
  cap_final:'{0} CAMPIONE!', cap_dcr:'DECIDE IL DISCHETTO', cap_rimonta:'DA -2 ALLA GLORIA',
  cap_gol90:"{0} AL 90'", cap_tris:'TRE VOLTE {0}!', cap_upset:'DAVIDE BATTE GOLIA',
- cap_goleada:'PIOGGIA DI GOL: {0}', cap_mvp:'{0}: MIGLIORE IN CAMPO', cap_nogoals:'RETI BIANCHE, CHE BATTAGLIA',
+ cap_goleada:'PIOGGIA DI GOL', cap_mvp:'{0}: MIGLIORE IN CAMPO', cap_nogoals:'RETI BIANCHE, CHE BATTAGLIA',
  cap_derby:'IL GIORNO DEL DERBY',
+ com_extra:["E domani al bar non si parlerà d'altro.","Il pallone, come sempre, ha avuto l'ultima parola.","Novanta minuti che finiscono dritti nell'album dei ricordi.","E il tabellone, stanotte, resta acceso un po' più a lungo.","Chi c'era potrà dire: io c'ero.","Il calcio è semplice: è vincere che è complicato."],
+
+ com_final:["{0} alza la coppa e la città può smettere di trattenere il fiato. Le finali non si giocano: si vincono.","Novanta minuti che valgono una stagione: {0} li ha vissuti da campione. Il resto è già nostalgia.","Alla fine la coppa ha scelto le mani giuste: quelle di {0}. Stanotte niente sonno."],
+ com_dcr:["Novanta minuti di trincea e poi la roulette dal dischetto, dove {0} ha avuto il cuore più freddo.","Quando il campo non decide, decide il coraggio: {0} dal dischetto non ha tremato mai.","I rigori non sono una lotteria, dicono: chiedetelo a {0}, che li ha preparati meglio."],
+ com_rimonta:["Sotto di due, spacciata, finita: poi {0} ha ricordato a tutti che il calcio dura novanta minuti.","Le rimonte non si spiegano, si raccontano: e questa di {0} si racconterà a lungo.","{0} era all'inferno e ha preso l'ascensore: rimonta da manuale, avversari pietrificati."],
+ com_gol90:["Tutto scritto? Mai: all'ultimo respiro {0} ha strappato la penna al destino.","Il pallone pesa una tonnellata al 90': {0} l'ha spinto dentro come niente fosse.","Novanta minuti di attesa per un lampo solo: quello di {0}. Vale il biglietto."],
+ com_tris:["Un gol è cronaca, due sono notizia, tre sono leggenda: {0} stanotte è leggenda.","{0} ha giocato da solo contro tutti — e hanno perso tutti. Tripletta da incorniciare.","Il pallone se lo porta a casa {0}, e nessuno ha avuto il coraggio di chiederglielo indietro."],
+ com_upset:["Sulla carta non c'era storia; per fortuna il calcio si gioca sull'erba: {0} fa festa, {1} rimugina.","Davide aveva la fionda carica: {0} ha battuto {1} e non è stato un caso.","{1} aveva tutto: nomi, storia e pronostico. A {0} è bastato il pallone."],
+ com_goleada:["Non una vittoria: una dimostrazione. {0} ha giocato al gatto col topo, e il topo non ringrazia.","A un certo punto il tabellino ha chiesto pietà: {0} no. Serata da valanga.","{0} ha aperto il rubinetto e nessuno ha trovato la chiave per chiuderlo."],
+ com_festival:["Difese in libera uscita e portieri in balìa: partita folle, di quelle che si raccontano al bar per un mese.","Chi ama il catenaccio cambi pagina: qui si è giocato a chi segnava di più. Ha vinto lo spettacolo.","Gol, ribaltoni e cuori in gola: mancavano solo i fuochi d'artificio."],
+ com_derby_w:["Il derby non si gioca, si vive: {0} stanotte vive meglio, e domani sfotte.","Cento anni di rivalità in novanta minuti: {0} si prende la città fino alla prossima volta.","Nel derby conta solo vincerlo: {0} l'ha capito prima degli altri."],
+ com_derby_x:["Il derby finisce pari e la città resta divisa a metà, come sempre: appuntamento alla prossima battaglia.","Tanto rumore, nessun padrone: il derby rimanda la sentenza e tiene tutti col fiato sospeso.","Onore diviso e sfottò congelati: il derby pareggia, l'attesa raddoppia."],
+
  hl_season:["{0} SUL TETTO D'EUROPA!","L'EUROPA È DI {0}!","{0} RE D'EUROPA!","NOTTE MAGICA: TRIONFA {0}!","{0} ALZA LA COPPA!"],
  hl_seasonyou:["{0} SUL TETTO D'EUROPA!","LA COPPA È NOSTRA: {0}!","{0} CAMPIONE D'EUROPA!","NOTTE MAGICA PER {0}!","{0}, L'EUROPA È TUA!"],
  cap_champ:"CAMPIONE D'EUROPA", cap_ballon:"PALLONE D'ORO: {0}"
@@ -1680,11 +1702,11 @@ I18N.en={
  log_newround:'— End of round: the deck deals 3 new cards each (table cards stay) —',
  log_shootout:'⚽ Penalty shootout — 5 each, cards face up: only the equal card saves. Then sudden death.',
  log_pen_shot:'{0} shoots the {1}…', log_pen_save:'🧤 SAVED! {0} holds the equal card', log_pen_goal:'⚽ GOAL! {0} sends the keeper the wrong way ({1}-{2})',
- fn_sudden:'⚽ SUDDEN DEATH!', fn_sudden2:'a fresh 5 cards each, same rule',
- fn_kickoff:'🪙 KICK-OFF', fn_kick2:'Coin toss: {0} starts{1}',
+ fn_sudden:'SUDDEN DEATH!', fn_sudden2:'a fresh 5 cards each, same rule',
+ fn_kickoff:'KICK-OFF', fn_kick2:'Coin toss: {0} starts{1}',
  fn_2half:'2ND HALF', fn_2half2:'{0} starts{1}',
  fn_extra:'EXTRA TIME!', fn_extra2:'If still level, penalty shootout — {0} starts{1}',
- fn_pens:'⚽ PENALTIES!', fn_pens2:'only the equal card saves{0}',
+ fn_pens:'PENALTIES!', fn_pens2:'{0} starts{1}',
  fn_touch:' — tap the pitch',
  ch_title:'You play the {0}{1}', ch_multi:'can capture in more than one way: choose.', ch_scopa:'SWEEP!',
  no_scorers:'No scorers',
@@ -1770,14 +1792,27 @@ I18N.en={
  hl_gol90:["IT IS NOW! {0} AT 90'!","LAST-GASP {0}!","{0} BREAKS HEARTS AT 90'!","STOPPAGE-TIME STUNNER: {0}!","THE LAST KICK BELONGS TO {0}!"],
  hl_tris:['HAT-TRICK HERO: {0}','{0} TAKES THE MATCH BALL HOME','THREE AND EASY: {0}!','TREBLE TROUBLE: {0}!','ONE MAN SHOW: {0}!'],
  hl_upset:['GIANT-KILLING! {0} STUN {1}','DAVID BEATS GOLIATH: {0}!','{0} SHOCK MIGHTY {1}!','UPSET OF THE SEASON: {0}!','{0} TOPPLE {1}!'],
- hl_goleada:['{0} RUN RIOT: {1}','{0} HIT {1}: DEMOLITION!','GOALS GALORE FOR {0}: {1}','{0} SHOW NO MERCY: {1}','A HURRICANE CALLED {0}: {1}'],
- hl_festival:['GOAL FEAST: {0}','FOOTBALL MADNESS: {0}!','WHAT A GAME: {0}!','THRILLS AND SPILLS: {0}','THEY SCORED FOR FUN: {0}'],
+ hl_goleada:['{0} RUN RIOT','{0} DEMOLITION!','GOALS GALORE FOR {0}','{0} SHOW NO MERCY','A HURRICANE CALLED {0}'],
+ hl_festival:['GOAL FEAST','FOOTBALL MADNESS!','WHAT A GAME!','THRILLS AND SPILLS','THEY SCORED FOR FUN'],
  hl_derby_w:['THE DERBY BELONGS TO {0}!','DERBY DAY DELIGHT FOR {0}!','{0} OWN THE CITY!','BRAGGING RIGHTS: {0}!','ONE CITY, ONE COLOUR: {0}!'],
- hl_derby_x:['DERBY HONOURS SHARED: {0}','NO MASTER IN THE DERBY: {0}','DERBY STALEMATE: {0}','ALL SQUARE IN THE DERBY: {0}','THE CITY HOLDS ITS BREATH: {0}'],
+ hl_derby_x:['DERBY HONOURS SHARED','NO MASTER IN THE DERBY','DERBY STALEMATE','ALL SQUARE IN THE DERBY','THE CITY HOLDS ITS BREATH'],
  cap_final:'{0} ARE CHAMPIONS!', cap_dcr:'SETTLED FROM THE SPOT', cap_rimonta:'FROM -2 TO GLORY',
  cap_gol90:"{0} AT 90'", cap_tris:'{0} TIMES THREE!', cap_upset:'DAVID BEATS GOLIATH',
- cap_goleada:'RAINING GOALS: {0}', cap_mvp:'{0}: MAN OF THE MATCH', cap_nogoals:'NO GOALS, WHAT A BATTLE',
+ cap_goleada:'RAINING GOALS', cap_mvp:'{0}: MAN OF THE MATCH', cap_nogoals:'NO GOALS, WHAT A BATTLE',
  cap_derby:'DERBY DAY',
+ com_extra:["Tomorrow at the bar they'll talk of nothing else.","The ball, as ever, had the final say.","Ninety minutes headed straight for the scrapbook.","And the scoreboard stays lit a little longer tonight.","Those who were there will say: I was there.","Football is simple — it's winning that's complicated."],
+
+ com_final:["{0} lift the cup and the city can breathe again. Finals aren't played: they're won.","Ninety minutes worth a season: {0} lived them like champions. The rest is already nostalgia.","In the end the cup chose the right hands: {0}'s. No sleep tonight."],
+ com_dcr:["Ninety minutes of trench warfare, then the roulette from the spot — where {0} kept the coldest heart.","When the pitch won't decide, courage does: {0} never trembled from the spot.","Penalties are no lottery, they say: ask {0}, who prepared them best."],
+ com_rimonta:["Two down, written off, done: then {0} reminded everyone football lasts ninety minutes.","Comebacks aren't explained, they're retold — and {0}'s will be retold for a while.","{0} were in hell and took the lift straight up: a textbook comeback, opponents turned to stone."],
+ com_gol90:["All decided? Never: at the last breath {0} snatched the pen from fate.","The ball weighs a ton in the 90th minute: {0} tapped it in like nothing.","Ninety minutes of waiting for a single flash: {0}'s. Worth the ticket."],
+ com_tris:["One goal is news, two a story, three a legend: tonight {0} is legend.","{0} took on everyone alone — and everyone lost. A hat-trick to frame.","{0} takes the match ball home, and nobody dared ask for it back."],
+ com_upset:["On paper there was no contest; luckily football is played on grass: {0} celebrate, {1} brood.","David's sling was loaded: {0} beat {1}, and it was no accident.","{1} had everything: names, history, odds. {0} just had the ball."],
+ com_goleada:["Not a win: a statement. {0} played cat and mouse, and the mouse won't say thanks.","At some point the scoreboard begged for mercy: {0} didn't. An avalanche of a night.","{0} turned on the tap and nobody found the key to shut it off."],
+ com_festival:["Defences on a day off, keepers at their mercy: a mad game you'll retell at the bar for a month.","Lovers of catenaccio, look away: this was a contest of who scores more. Entertainment won.","Goals, twists and hearts in throats: only the fireworks were missing."],
+ com_derby_w:["You don't play a derby, you live it: {0} live better tonight — and gloat tomorrow.","A hundred years of rivalry in ninety minutes: {0} own the city until next time.","In a derby only winning matters: {0} understood it first."],
+ com_derby_x:["The derby ends level and the city stays split in half, as ever: next battle already booked.","So much noise, no master: the derby defers its verdict and keeps everyone breathless.","Honours shared, taunts frozen: the derby draws and the wait doubles."],
+
  hl_season:['{0} ON TOP OF EUROPE!','EUROPE BELONGS TO {0}!','{0} KINGS OF EUROPE!','MAGIC NIGHT: {0} TRIUMPH!','{0} LIFT THE CUP!'],
  hl_seasonyou:['{0} ON TOP OF EUROPE!','THE CUP IS OURS: {0}!','{0} CHAMPIONS OF EUROPE!','A MAGIC NIGHT FOR {0}!','{0}, EUROPE IS YOURS!'],
  cap_champ:'CHAMPIONS OF EUROPE', cap_ballon:'GOLDEN BALL: {0}'
@@ -2731,6 +2766,7 @@ function renderAll(lastLaid){
     sub=`${dots('me')}&nbsp;&nbsp;·&nbsp;&nbsp;${dots('ai')}`;
   }
   $('sb-info').innerHTML=`${fase}<br>${sub}`;
+  const sh=$('sb-help');if(sh)sh.style.display=G.shootMode?'':'none'; // il "?" delle regole compare SOLO ai rigori (Enrico 2026-08-14)
   // avversario (dorsi con stemma)
   const za=$('zone-ai');za.querySelectorAll('.card').forEach(e=>e.remove());
   const init=G.names.ai[0].toUpperCase();
@@ -2795,9 +2831,12 @@ async function showGoal(r){
 }
 
 async function showPenFlash(r){ // GOL!/PARATA! a tutto schermo anche dal dischetto — stesso overlay del gol in partita
-  const team=r.matched?(r.side==='me'?G.names.me:G.names.ai):(r.side==='me'?G.names.ai:G.names.me); // parata = il portiere che risponde; gol = il tiratore
+  const thr=r.side==='me'?'ai':'me'; // chi ha lanciato
+  const team=r.matched?(r.side==='me'?G.names.me:G.names.ai):(thr==='me'?G.names.me:G.names.ai); // parata = il portiere che risponde; gol = il tiratore
+  let who=team;
+  if(!r.matched){const tc=G.table&&G.table[0];const nm=(tc&&tc.v>=2&&G.players&&G.players[thr])?G.players[thr][tc.v-2]:null;if(nm)who=nm+' — '+team;} // col gol si dice anche CHI ha segnato: il giocatore della carta lanciata (Enrico 2026-08-14)
   $('goal-big').innerHTML=r.matched?`<span class="gball">🧤</span>${T.penSaveBig}`:`<span class="gball">⚽</span>${T.goalBig}`;
-  $('goal-who').textContent=team;
+  $('goal-who').textContent=who;
   $('goal-overlay').classList.add('show');
   await sleep(1400);
   $('goal-overlay').classList.remove('show');
@@ -2910,23 +2949,23 @@ function newsStory(){
   if(winner&&G.forza){const sum=f=>f.att+f.dif+f.vis;upset=sum(G.forza[winner==='me'?'ai':'me'])-sum(G.forza[winner])>=5&&Math.abs(sMe-sAi)>=2;}
   const isFinal=(G.career&&G.career.euro==='final')||(G.tour&&G.tour.ko&&G.tour.tie&&G.tour.tie.single);
   const dcr=!!G.shootResult, dcrW=dcr?(G.shootWinner==='me'?G.names.me:G.names.ai):null;
-  if(isFinal&&(winner||dcr))return {hl:fmt(pk(T.hl_final),dcr?dcrW:wName),cap1:fmt(T.cap_final,dcr?dcrW:wName)};
-  if(dcr)return {hl:fmt(pk(T.hl_dcr),dcrW),cap1:T.cap_dcr};
-  if(comeback)return {hl:fmt(pk(T.hl_rimonta),wName),cap1:T.cap_rimonta};
-  if(g90)return {hl:fmt(pk(T.hl_gol90),g90.name),cap1:fmt(T.cap_gol90,g90.name)};
-  if(tris)return {hl:fmt(pk(T.hl_tris),tris),cap1:fmt(T.cap_tris,tris)};
-  if(upset)return {hl:fmt(pk(T.hl_upset),wName,lName),cap1:T.cap_upset};
-  if(winner&&Math.max(sMe,sAi)>=4)return {hl:fmt(pk(T.hl_goleada),wName,score),cap1:fmt(T.cap_goleada,score)}; // 4+ gol di una squadra: goleada (soglia della spec approvata — un ritocco l'aveva alzata a 5 e il giornale era quasi sparito, fix 2026-08-03)
-  if(sMe+sAi>=6)return {hl:fmt(pk(T.hl_festival),score),cap1:fmt(T.cap_goleada,score)};                          // 6+ gol totali: partita folle (idem, era salita a 7)
-  if(G.derby)return winner?{hl:fmt(pk(T.hl_derby_w),wName),cap1:T.cap_derby}:{hl:fmt(pk(T.hl_derby_x),score),cap1:T.cap_derby}; // il DERBY va SEMPRE in prima pagina
+  if(isFinal&&(winner||dcr))return {hl:fmt(pk(T.hl_final),dcr?dcrW:wName),cap1:fmt(T.cap_final,dcr?dcrW:wName),com:fmt(pk(T.com_final),dcr?dcrW:wName)+' '+pk(T.com_extra)};
+  if(dcr)return {hl:fmt(pk(T.hl_dcr),dcrW),cap1:T.cap_dcr,com:fmt(pk(T.com_dcr),dcrW)+' '+pk(T.com_extra)};
+  if(comeback)return {hl:fmt(pk(T.hl_rimonta),wName),cap1:T.cap_rimonta,com:fmt(pk(T.com_rimonta),wName)+' '+pk(T.com_extra)};
+  if(g90)return {hl:fmt(pk(T.hl_gol90),g90.name),cap1:fmt(T.cap_gol90,g90.name),com:fmt(pk(T.com_gol90),g90.name)+' '+pk(T.com_extra)};
+  if(tris)return {hl:fmt(pk(T.hl_tris),tris),cap1:fmt(T.cap_tris,tris),com:fmt(pk(T.com_tris),tris)+' '+pk(T.com_extra)};
+  if(upset)return {hl:fmt(pk(T.hl_upset),wName,lName),cap1:T.cap_upset,com:fmt(pk(T.com_upset),wName,lName)+' '+pk(T.com_extra)};
+  if(winner&&Math.max(sMe,sAi)>=4)return {hl:fmt(pk(T.hl_goleada),wName,score),cap1:T.cap_goleada,com:fmt(pk(T.com_goleada),wName)+' '+pk(T.com_extra)}; // 4+ gol di una squadra: goleada
+  if(sMe+sAi>=6)return {hl:pk(T.hl_festival),cap1:T.cap_goleada,com:pk(T.com_festival)+' '+pk(T.com_extra)};                          // 6+ gol totali: partita folle
+  if(G.derby)return winner?{hl:fmt(pk(T.hl_derby_w),wName),cap1:T.cap_derby,com:fmt(pk(T.com_derby_w),wName)+' '+pk(T.com_extra)}:{hl:pk(T.hl_derby_x),cap1:T.cap_derby,com:pk(T.com_derby_x)+' '+pk(T.com_extra)}; // il DERBY va SEMPRE in prima pagina
   return null;
 }
 var newsSeason=false; // true = la prima pagina è il GIORNALE DI FINE STAGIONE (niente partita da registrare)
 function renderNews(story){
   newsSeason=false;$('news-menu').style.display='';
   $('news-headline').textContent=story.hl;
-  $('news-score').innerHTML=`${G.score.me} - ${G.score.ai}`+(G.shootResult?`<span class="news-dcr">${G.shootResult.me}-${G.shootResult.ai} ${T.dcr}</span>`:''); // solo numeri interni + T.dcr: niente input utente
-  $('news-sub').textContent=`${G.names.me} vs ${G.names.ai}`;
+  $('news-score').innerHTML=`<span class="ns-team">${escHtml(G.names.me)}</span> ${G.score.me} - ${G.score.ai} <span class="ns-team">${escHtml(G.names.ai)}</span>`+(G.shootResult?`<span class="news-dcr">${G.shootResult.me}-${G.shootResult.ai} ${T.dcr}</span>`:''); // squadre e punteggio sulla STESSA riga (Enrico 2026-08-14)
+  $('news-sub').textContent='';
   // FOTO 1 (azione, i due omini nelle maglie della partita): didascalia = il fatto del giorno
   $('news-cap').textContent=story.cap1||'';
   const sc=$('news-scene');
@@ -2944,7 +2983,9 @@ function renderNews(story){
   const km=mvp?(mvp.side==='me'?ka:kb):ka;
   const sp2=sc2.querySelector('.pb-spr');
   if(sp2){const px2=document.createElement('div');px2.className='px';px2.style.boxShadow=spriteShadow(km.c1,km.c2,km.shorts);sp2.appendChild(px2);}
-  $('news-marc').innerHTML=G.scorers.map(s=>`<div class="news-row"><b>${s.minute}'</b>${s.name} (n. ${s.num}) — ${s.side==='me'?G.names.me:G.names.ai}</div>`).join('');
+  const nmCol=side=>G.scorers.filter(x=>x.side===side).map(x=>side==='me'?`<div>${x.name} <b>${x.minute}'</b></div>`:`<div><b>${x.minute}'</b> ${x.name}</div>`).join(''); // minuti affacciati sul corridoio centrale
+  $('news-marc').innerHTML=G.scorers.length?`<div class="nm-col nm-h">${nmCol('me')}</div><div class="nm-col nm-a">${nmCol('ai')}</div>`:''; // due colonne sotto le rispettive squadre (Enrico 2026-08-14): la squadra la dice la posizione
+  $('news-comment').textContent=story.com||''; // il corsivo del cronista
   // stessi pulsanti del tabellino classico: Rigioca in amichevole e multiplayer (= rivincita), Continua in torneo/carriera
   const nr=$('news-rigioca');nr.disabled=false;nr.style.opacity='';
   nr.style.display=(G.tour||G.career)?'none':'';
@@ -2953,8 +2994,9 @@ function renderNews(story){
 function renderSeasonNews(d){ // GIORNALE DI FINE STAGIONE: la coppa e il Pallone d'oro (deciso 2026-07-28, al posto del riepilogo testuale)
   newsSeason=true;G=null; // nessuna partita in corso: Continua = hub della nuova stagione
   $('news-headline').textContent=fmt(pick(d.userChamp?T.hl_seasonyou:T.hl_season),d.champ.name);
-  $('news-score').innerHTML=`${d.gh} - ${d.ga}`+(d.pen?`<span class="news-dcr">${d.pen[0]}-${d.pen[1]} ${T.dcr}</span>`:''); // come sopra: numeri interni
-  $('news-sub').textContent=`${d.na} vs ${d.nb}`;
+  $('news-score').innerHTML=`<span class="ns-team">${escHtml(d.na)}</span> ${d.gh} - ${d.ga} <span class="ns-team">${escHtml(d.nb)}</span>`+(d.pen?`<span class="news-dcr">${d.pen[0]}-${d.pen[1]} ${T.dcr}</span>`:''); // riga unica anche qui
+  $('news-sub').textContent='';
+  $('news-comment').textContent='';
   // FOTO 1: i due omini nelle maglie della finale; didascalia = il campione
   $('news-cap').textContent=T.cap_champ;
   const sc=$('news-scene');
@@ -3036,7 +3078,7 @@ async function shootRound(){
   logLines=[];
   addLog(T.log_shootout);
   const aiStarts=G.turn==='ai';
-  showFieldNote(T.fn_pens,fmt(T.fn_pens2,(aiStarts&&!G.mp)?T.fn_touch:''));
+  showFieldNote(T.fn_pens,fmt(T.fn_pens2,G.turn==='me'?G.names.me:G.names.ai,(aiStarts&&!G.mp)?T.fn_touch:'')); // si annuncia CHI BATTE, come la monetina (Enrico 2026-08-14)
   if(aiStarts){
     if(G.mp){busy=false;return;} // sfida di coppa: il rigore dell'avversario arriva dalla stanza, non dall'IA
     busy=true;
@@ -4093,7 +4135,7 @@ async function mpJoinRoom(){
       let isCup=false;
       try{isCup=(await db.ref('cups/'+raw+'/created').once('value')).exists();}catch(e){}
       mpShowSetup();
-      if(isCup){UI.toMpcSetup();$('mpc-code').value=raw;askConfirm(T.mpc_redirected,()=>{});}
+      if(isCup){UI.toMpcList();$('mpc-code').value=raw;askConfirm(T.mpc_redirected,()=>{});}
       else askConfirm(T.mp_err_notfound,()=>{});
       return;
     }
@@ -4859,11 +4901,13 @@ window.UI={
       host.querySelectorAll('.career-row').forEach(r=>r.onclick=()=>UI.mpcResume(r.dataset.code));
       host.querySelectorAll('.cdel').forEach(b=>b.onclick=(e)=>{e.stopPropagation();UI.mpcResumeX(b.dataset.code);});
     }
+    $('mpcl-pname').value=lsGet('soccercard_player_name')||''; // nome e codice in PRIMA pagina: l'invitato entra da qui (Enrico 2026-08-14)
+    $('mpcl-pname').oninput=()=>lsSet('soccercard_player_name',$('mpcl-pname').value.trim().slice(0,14));
+    $('mpc-code').value='';
     show('scr-mpc-list');
   },
   toMpcSetup(){ // creazione/ingresso con codice: ci si arriva SOLO dall'elenco
     renderMpcSetup();
-    $('mpc-code').value='';
     $('mpc-pname').value=lsGet('soccercard_player_name')||''; // il nome per l'albo si scrive una volta sola
     $('mpc-pname').oninput=()=>lsSet('soccercard_player_name',$('mpc-pname').value.trim().slice(0,14)); // e si salva mentre lo scrivi: resta anche se esci senza creare (Enrico 2026-08-11)
     const mn=$('mpc-name'); // il nome di default segue la lingua (senza toccare un nome scritto a mano)
