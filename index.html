@@ -377,7 +377,10 @@
   .news-sheet .pb-headline{margin-top:8px; line-height:1.15;}
   .news-score{font-family:var(--px); font-size:2rem; text-align:center; color:#141414; margin:12px 0 2px;}
   .news-score .news-dcr{display:block; font-family:var(--px); font-size:.8rem; letter-spacing:1px; color:#222; margin-top:12px;}
-  .news-score .ns-team{font-family:'Segoe UI',system-ui,sans-serif; font-size:1.3rem; font-weight:600; letter-spacing:0; vertical-align:middle;}
+  .news-score .ns-line{display:flex; align-items:center; justify-content:center; gap:10px;}
+  .news-score .ns-team{font-family:'Segoe UI',system-ui,sans-serif; font-size:1.3rem; font-weight:600; letter-spacing:0; flex:1; line-height:1.2;}
+  .news-score .ns-h{text-align:right;} .news-score .ns-a{text-align:left;}
+  .news-score .ns-mid{flex:0 0 auto;}
   @media (max-width:480px){ .news-score{font-size:1.5rem;} .news-score .ns-team{font-size:.9rem;} }
   .news-comment{font-family:'Segoe UI',system-ui,sans-serif; font-style:italic; font-size:.95rem; line-height:1.5; color:#2a1f1a; text-align:left; border-top:1px solid #141414; margin-top:8px; padding-top:7px;} /* stesso carattere pixel del punteggio, taglia subordinata (Enrico 2026-08-14: in Segoe stonava a qualsiasi dimensione) */ /* il verdetto dei rigori sotto il punteggio, su riga sua; 1.05rem (Enrico 2026-08-10: prima sbordava, poi .72 troppo piccolo) */
   .news-sub{text-align:center; color:#5a5648; font-size:.95rem; margin-bottom:8px;}
@@ -534,7 +537,7 @@
 <!-- ===== SETUP AMICHEVOLE (stesso layout del menu principale) ===== -->
 <div id="scr-setup" class="screen">
   <div class="panel90">
-    <button class="top-back" onclick="UI.toMenu()" data-i18n-title="t_backmenu" title="Torna al menu">◄</button>
+    <button class="top-back top-info" onclick="UI.info(0)" data-i18n-title="t_info" title="Regole">?</button><button class="top-back" onclick="UI.toMenu()" data-i18n-title="t_backmenu" title="Torna al menu">◄</button>
     <div class="phead" data-i18n="setup_head">⚽ Amichevole</div>
     <label data-i18n="lbl_era">Epoca</label>
     <select id="sel-era"></select>
@@ -1483,7 +1486,7 @@ I18N.it={
  ts_note:'Ogni coppa completata finisce nell\'<b>Albo d\'oro</b>. La coppa si salva da sola.',
  sub_brk:'Fasi finali', sub_class:'Classifica',
  btn_next:'Prosegui', btn_resume_susp:'Riprendi la partita sospesa', btn_newcomp:'Nuova competizione', btn_abandon:'Annulla',
- btn_newcup:'Nuova coppa', tl_empty:'Nessuna coppa in corso: creane una nuova.', tl_del:'Elimina coppa', tl_done:'Conclusa',
+ btn_newcup:'Crea coppa', tl_empty:'Nessuna coppa in corso: creane una nuova.', tl_del:'Elimina coppa', tl_done:'Conclusa',
  btn_penstrial:'Solo rigori',
  mpcl_empty:'Nessuna coppa in corso: creane una nuova o entra con un codice.',
  nat_all:'Tutte le nazioni', t_info:'Le regole di questa sezione', c_close:'Chiudi',
@@ -1737,7 +1740,7 @@ I18N.en={
  ts_note:'Every completed cup goes into the <b>Hall of fame</b>. The cup saves itself.',
  sub_brk:'Knockout', sub_class:'Standings',
  btn_next:'Continue', btn_resume_susp:'Resume the suspended match', btn_newcomp:'New competition', btn_abandon:'Abandon',
- btn_newcup:'New cup', tl_empty:'No cups in progress: create a new one.', tl_del:'Delete cup', tl_done:'Finished',
+ btn_newcup:'Create cup', tl_empty:'No cups in progress: create a new one.', tl_del:'Delete cup', tl_done:'Finished',
  btn_penstrial:'Penalties only',
  mpcl_empty:'No cups in progress: create a new one or join with a code.',
  nat_all:'All countries', t_info:'The rules for this section', c_close:'Close',
@@ -2824,7 +2827,7 @@ async function showGoal(r){
   const team=r.side==='me'?G.names.me:G.names.ai;
   const sc=G.scorers[G.scorers.length-1];
   $('goal-big').innerHTML=`<span class="gball">⚽</span>${T.goalBig}`; // pallone piccolo a sinistra (variante B) — testo da i18n, mai input utente
-  $('goal-who').textContent=`${sc.name} (n. ${sc.num}) — ${team} — ${sc.minute}'`;
+  $('goal-who').textContent=`${sc.name} — ${team} — ${sc.minute}'`; // marcatore, squadra e minuto: niente numero di maglia (Enrico 2026-08-14)
   $('goal-overlay').classList.add('show');
   await sleep(2000);
   $('goal-overlay').classList.remove('show');
@@ -2964,7 +2967,7 @@ var newsSeason=false; // true = la prima pagina è il GIORNALE DI FINE STAGIONE 
 function renderNews(story){
   newsSeason=false;$('news-menu').style.display='';
   $('news-headline').textContent=story.hl;
-  $('news-score').innerHTML=`<span class="ns-team">${escHtml(G.names.me)}</span> ${G.score.me} - ${G.score.ai} <span class="ns-team">${escHtml(G.names.ai)}</span>`+(G.shootResult?`<span class="news-dcr">${G.shootResult.me}-${G.shootResult.ai} ${T.dcr}</span>`:''); // squadre e punteggio sulla STESSA riga (Enrico 2026-08-14)
+  $('news-score').innerHTML=`<span class="ns-line"><span class="ns-team ns-h">${escHtml(G.names.me)}</span><span class="ns-mid">${G.score.me} - ${G.score.ai}</span><span class="ns-team ns-a">${escHtml(G.names.ai)}</span></span>`+(G.shootResult?`<span class="news-dcr">${G.shootResult.me}-${G.shootResult.ai} ${T.dcr}</span>`:''); // nomi ai lati, punteggio al centro: i nomi lunghi vanno a capo nella LORO metà (fix SE 2026-08-14)
   $('news-sub').textContent='';
   // FOTO 1 (azione, i due omini nelle maglie della partita): didascalia = il fatto del giorno
   $('news-cap').textContent=story.cap1||'';
@@ -2994,9 +2997,9 @@ function renderNews(story){
 function renderSeasonNews(d){ // GIORNALE DI FINE STAGIONE: la coppa e il Pallone d'oro (deciso 2026-07-28, al posto del riepilogo testuale)
   newsSeason=true;G=null; // nessuna partita in corso: Continua = hub della nuova stagione
   $('news-headline').textContent=fmt(pick(d.userChamp?T.hl_seasonyou:T.hl_season),d.champ.name);
-  $('news-score').innerHTML=`<span class="ns-team">${escHtml(d.na)}</span> ${d.gh} - ${d.ga} <span class="ns-team">${escHtml(d.nb)}</span>`+(d.pen?`<span class="news-dcr">${d.pen[0]}-${d.pen[1]} ${T.dcr}</span>`:''); // riga unica anche qui
+  $('news-score').innerHTML=`<span class="ns-line"><span class="ns-team ns-h">${escHtml(d.na)}</span><span class="ns-mid">${d.gh} - ${d.ga}</span><span class="ns-team ns-a">${escHtml(d.nb)}</span></span>`+(d.pen?`<span class="news-dcr">${d.pen[0]}-${d.pen[1]} ${T.dcr}</span>`:''); // riga unica anche qui
   $('news-sub').textContent='';
-  $('news-comment').textContent='';
+  $('news-comment').textContent=fmt(pick(T.com_final),d.champ.name)+' '+pick(T.com_extra); // stesso cronista del giornale classico (Enrico 2026-08-14): frasi da finale + chiusa
   // FOTO 1: i due omini nelle maglie della finale; didascalia = il campione
   $('news-cap').textContent=T.cap_champ;
   const sc=$('news-scene');
@@ -3478,6 +3481,9 @@ function tourDoneT(t){ // com'è messa una coppa dell'elenco, senza aprirla (gem
   return last.ties.length>0&&last.ties.every(x=>tieWinner(x)!==null);
 }
 function renderTourList(){ // elenco delle coppe in solitaria, stile lista carriere (multi-coppa 2026-08-10)
+  let purged=false; // le coppe CONCLUSE non si mostrano più: il trofeo è già nell'albo (Enrico 2026-08-14)
+  Object.keys(TOURS).forEach(id=>{if(tourDoneT(TOURS[id])&&!(TOUR&&TOUR.id===id)){delete TOURS[id];purged=true;}});
+  if(purged)saveTours();
   const host=$('tour-saves'), ids=Object.keys(TOURS).sort((a,b)=>(TOURS[b].created||0)-(TOURS[a].created||0));
   if(!ids.length){host.innerHTML='<div class="trow" style="opacity:.7;">'+T.tl_empty+'</div>';return;}
   host.innerHTML=ids.map((id,ix)=>{
