@@ -279,7 +279,14 @@
   .field-note .fn1{font-family:var(--px); font-size:1.05rem; color:#fff; letter-spacing:2px; text-shadow:2px 2px 0 rgba(0,0,0,.9), -1px -1px 0 rgba(0,0,0,.6), 0 0 14px rgba(0,0,0,.6);}
   .field-note .fn2{font-family:var(--px); font-size:.8rem; color:var(--oro); margin-top:10px; letter-spacing:1px; text-shadow:2px 2px 0 rgba(0,0,0,.9);} /* più grande: "Monetina: inizia X" si leggeva poco (Enrico 2026-08-08) */
   .field-note.hidden{display:none;}
+  .field-note.fnbig{background:rgba(10,18,8,.62); padding:16px 0;} /* banda TV per i PASSAGGI: supplementari/rigori/oltranza (Enrico 2026-08-15) */
+  .field-note.fnbig .fn1{font-size:1.35rem; letter-spacing:3px;}
+  .field-note.fnbig .fn2{font-size:.85rem;}
   @keyframes fnin{from{opacity:0; transform:translateY(-8px);} to{opacity:1; transform:none;}}
+  .gk-tag{position:absolute; left:0; right:0; font-family:var(--px); font-size:.55rem; letter-spacing:2px; color:#dfe9df; text-align:center; opacity:.92; text-shadow:1px 1px 0 rgba(0,0,0,.8); pointer-events:none; z-index:2;} /* PORTIERE sopra la mano di chi para (Enrico 2026-08-21) */
+  #gk-ai{top:calc(var(--ch) + 22px);}
+  #gk-me{bottom:calc(var(--ch) + 40px);}
+  .gk-tag.hidden{display:none;}
   .zone{padding:10px; display:flex; flex-wrap:wrap; gap:9px; justify-content:center; align-items:center; z-index:1;}
   #zone-ai{min-height:calc(var(--ch) + 20px);} /* = carta + padding 10+10: la zona NON collassa quando l'IA resta senza carte, così il tavolo (flex:1) non si sposta rispetto alla linea di centrocampo */
   #zone-table{flex:1; min-height:calc(var(--ch) + 28px); align-content:center;}
@@ -434,6 +441,8 @@
     .dot{width:11px; height:11px;}
     .field-note .fn1{font-size:.8rem;}
     .field-note .fn2{font-size:.48rem;}
+    .field-note.fnbig .fn1{font-size:.95rem;}
+    .field-note.fnbig .fn2{font-size:.55rem;}
     .m.circle{width:120px; height:120px;}
     #log{font-size:.68rem; min-height:28px; padding:5px 10px;}
     #goal-overlay .big{font-size:2.2rem;}
@@ -777,7 +786,9 @@
     <div id="sprites"></div>
     <div id="kickoff-note" class="field-note hidden"></div>
     <div class="zone" id="zone-ai"></div>
+    <div id="gk-ai" class="gk-tag hidden"></div>
     <div class="zone" id="zone-table"><div id="aiplay-spot"></div></div>
+    <div id="gk-me" class="gk-tag hidden"></div>
     <div class="zone" id="zone-me"></div>
   </div>
   <div id="log"></div>
@@ -1074,17 +1085,21 @@ function startHalf(G,half){
 }
 function isLastPlay(G){return G.deck.length===0&&G.hands.me.length===0&&G.hands.ai.length===0;}
 
-/* CALCI DI RIGORE — REGOLA DEFINITIVA (Enrico 2026-08-15): TUTTE le carte scoperte, 4 CARTE ALLA VOLTA
-   a testa, TUTTE DI VALORI DIVERSI (ogni carta = un giocatore diverso); a ogni ricarica il mazzo consegna
+/* CALCI DI RIGORE — REGOLA DEFINITIVA (Enrico 2026-08-21): TUTTE le carte scoperte, 5 RIGORISTI
+   a testa (la prima mano È la serie regolamentare), TUTTI DI VALORI DIVERSI; a ogni ricarica il mazzo consegna
    SOLO giocatori che non hanno ancora battuto in quella serie → NESSUNO TIRA DUE VOLTE, per costruzione,
    senza regole visibili né carte bloccate. Il TIRATORE lancia a faccia in su; il PORTIERE para SOLO SE HA
    LA CARTA UGUALE (obbligatoria, è la presa) — senza gemella scarta una carta SPRECATA ed è GOL DEL TIRATORE.
    Numeri misurati (6000 serie): gol ~73%, come nel calcio vero. Dal 6° OLTRANZA: thrown azzerato, si ricomincia.
-   Tabellone TV nello scoreboard: 🟢 gol / 🔴 parato / ⚪ da battere. */
+   Tabellone TV nello scoreboard: 🟢 gol / 🔴 parato / ⚪ da battere.
+   PORTIERE CON MANO SEPARATA (Enrico 2026-08-21): 4 carte di parata A PARTE, uniche, rinnovate a ogni
+   ricarica. Chiude il buco dell'ECO trovato da Enrico: con la mano unica chi aveva tirato il 7 non
+   poteva più averlo → ritirare i valori già battuti dall'avversario era gol sicuro al 100%. Ora tiro
+   e parata non si parlano; numeri invariati (gol ~74%, misurato su 6000 serie). */
 function startShootout(G){
   const deck=shuffle(buildDeck(),G.rnd);
   deck.forEach(c=>{if(c.v===1)c.kind='rigore';}); // ai rigori ogni asso è un rigore
-  const nCards=4; // 4 CARTE ALLA VOLTA (Enrico 2026-08-15): valori unici e freschi = gol ~73%, realtà
+  const nShoot=5,nKeep=4; // 5 RIGORISTI come nel calcio vero (Enrico 2026-08-21): la prima mano È la serie regolamentare, si ricarica solo in oltranza; il portiere tiene 4 carte (misurato: gol ~73%, con 5 crollava al 67%)
   if(!G.pens){ // PRIMA serie: contatori a zero; le ricariche d'oltranza passano di qui senza toccarli
     G.half++;
     G.pens={g:{me:0,ai:0},t:{me:0,ai:0},pend:null,thrown:{me:{},ai:{}}}; // thrown: chi ha già battuto (NO-REPEAT nei regolamentari, Enrico 2026-08-15)
@@ -1094,11 +1109,14 @@ function startShootout(G){
   if(G.pens&&G.pens.t&&G.pens.t.me>=5&&G.pens.t.ai>=5)G.pens.thrown={me:{},ai:{}}; // OLTRANZA: si ricomincia, tutti di nuovo disponibili
   const dealU=sd=>{ // mano a VALORI UNICI, saltando i giocatori che hanno già battuto (fallback: unici e basta, se il mazzo è corto)
     const th=(G.pens&&G.pens.thrown&&G.pens.thrown[sd])||{}, h=[], seen={};
-    for(let i=0;i<deck.length&&h.length<nCards;i++){const v=deck[i].v;if(!seen[v]&&!th[v]){seen[v]=1;h.push(deck.splice(i,1)[0]);i--;}}
-    for(let i=0;i<deck.length&&h.length<nCards;i++){const v=deck[i].v;if(!seen[v]){seen[v]=1;h.push(deck.splice(i,1)[0]);i--;}}
+    for(let i=0;i<deck.length&&h.length<nShoot;i++){const v=deck[i].v;if(!seen[v]&&!th[v]){seen[v]=1;h.push(deck.splice(i,1)[0]);i--;}}
+    for(let i=0;i<deck.length&&h.length<nShoot;i++){const v=deck[i].v;if(!seen[v]){seen[v]=1;h.push(deck.splice(i,1)[0]);i--;}}
     return h;
   };
   const sA=dealU('me'),sB=dealU('ai');
+  const svDeal=()=>{const h=[],seen={};for(let i=0;i<deck.length&&h.length<nKeep;i++){const v=deck[i].v;if(!seen[v]){seen[v]=1;h.push(deck.splice(i,1)[0]);i--;}}return h;}; // le carte del PORTIERE: uniche, dal mazzo, dopo i rigoristi
+  const vA=svDeal(),vB=svDeal();
+  G.pens.sv=G.flip?{me:vB,ai:vA}:{me:vA,ai:vB}; // mano di parata separata (Enrico 2026-08-21), flip come le mani
   G.hands=G.flip?{me:sB,ai:sA}:{me:sA,ai:sB}; // flip: come startHalf, per gli schermi specchiati del multiplayer
   G.playsInHalf=0;G.lastCapturer=null;
 }
@@ -1117,12 +1135,17 @@ function pensPlay(G,side,handIdx){ // un rigore in DUE CARTE SCOPERTE (regola RO
     r.card=card;G.table=[card];P.pend=card;r.shot=true;
     if(G.seen)G.seen[card.v]=(G.seen[card.v]||0)+1; // il lancio è pubblico da subito
     G.playsInHalf++;G.turn=other; // ora chi è sul dischetto
+    // il PORTIERE che sta per rispondere non resta MAI a mani vuote: con 5 tiri per giro e 4 carte
+    // di parata la ricarica serve a metà giro — QUI, prima del render, o un umano non potrebbe cliccare
+    if(P.sv&&P.sv[other]&&!P.sv[other].length){const d2=shuffle(buildDeck(),G.rnd),seen={};for(let i=0;i<d2.length&&P.sv[other].length<4;i++){const v=d2[i].v;if(!seen[v]){seen[v]=1;P.sv[other].push(d2[i]);}}}
     return r;
   }
   // RISPOSTA dal dischetto: la CARTA UGUALE è gol (obbligatoria, qualunque indice sia stato scelto); ogni altra è sprecata
-  const twin=G.hands[side].findIndex(c=>c.v===P.pend.v);
-  const idx=twin>=0?twin:Math.min(handIdx||0,G.hands[side].length-1);
-  const card=G.hands[side].splice(idx,1)[0];
+  const SV=(P.sv&&P.sv[side])||G.hands[side]; // il PORTIERE risponde dalle SUE carte (fallback: salvataggi vecchi)
+  if(P.sv&&SV.length===0){const d2=shuffle(buildDeck(),G.rnd),seen={};for(let i=0;i<d2.length&&SV.length<4;i++){const v=d2[i].v;if(!seen[v]){seen[v]=1;SV.push(d2[i]);}}} // cintura: mai a mani vuote (stesso seme = identica in MP)
+  const twin=SV.findIndex(c=>c.v===P.pend.v);
+  const idx=twin>=0?twin:Math.min(handIdx||0,SV.length-1);
+  const card=SV.splice(idx,1)[0];
   r.card=card;
   G.table=[P.pend,card];
   if(G.seen)G.seen[card.v]=(G.seen[card.v]||0)+1;
@@ -1138,6 +1161,8 @@ function pensPlay(G,side,handIdx){ // un rigore in DUE CARTE SCOPERTE (regola RO
   else if(G.hands.me.length===0&&G.hands.ai.length===0)startShootout(G); // mani vuote → NUOVE 5 a testa, anche a metà dei regolamentari (stesso seme = identica in MP)
   G.playsInHalf++;
   G.turn=side; // chi ha appena risposto va sul dischetto: tiro A, risposta B, tiro B, risposta A…
+  if(r.endOfHalf)P.over=true; // serie chiusa: in campo niente più etichette PORTIERE
+  else if(P.sv&&P.sv[other]&&!P.sv[other].length){const d2=shuffle(buildDeck(),G.rnd),seen={};for(let i=0;i<d2.length&&P.sv[other].length<4;i++){const v=d2[i].v;if(!seen[v]){seen[v]=1;P.sv[other].push(d2[i]);}}} // il PROSSIMO portiere si prepara SUBITO: la sua mano si vede già prima del tiro (Enrico 2026-08-21)
   return r;
 }
 /* PRNG deterministico col seme: nelle sfide dirette di coppa i mazzi di OGNI smazzata (supplementari
@@ -1207,15 +1232,15 @@ function aiChoose(G,side){
   const seen0=G.seen||{};
   // quante carte di valore v possono ancora arrivare in mano all'avversario (conteggio, pesa con la Lucidità)
   const avail=v=>{if(v<1||v>10)return 0;const mine=hand.filter(c=>c.v===v).length;return Math.max(0,4-(seen0[v]||0)-mine);};
-  if(G.pens){ // RIGORI GOL=MATCH (2026-08-10): LANCIO = valore con MENO copie vive fuori dalla mia mano
-    // (difficile che l'avversario abbia la carta uguale per il gol — la Difesa non regala). RISPOSTA = la
-    // carta uguale se c'è (GOL obbligatorio); altrimenti si SPRECA la carta che vale meno per i match
-    // futuri: prima i doppioni (una copia resta), poi il valore con meno copie in giro (la Lucidità pesa).
+  if(G.pens){ // RIGORI (2026-08-21): LANCIO = valore con MENO copie vive fuori dalla mia mano. RISPOSTA
+    // = il PORTIERE gioca dalle SUE carte: la gemella se c'è (parata obbligatoria); altrimenti SPRECA
+    // il valore con meno copie in giro (la Lucidità pesa: copre meglio i tiri che possono ancora arrivare).
     if(G.pens.pend){
-      const tw=hand.findIndex(c=>c.v===G.pens.pend.v);
-      if(tw>=0)return {handIdx:tw,optIdx:0}; // gol obbligatorio
-      const mine=v=>hand.filter(c=>c.v===v).length;
-      const cands=hand.map((c,i)=>({handIdx:i,optIdx:0,score:(mine(c.v)>1?2:0)-avail(c.v)*0.5+rnd()*1.4}));
+      const rh=(G.pens.sv&&G.pens.sv[side])||hand; // mano del portiere (fallback: salvataggi vecchi)
+      if(!rh.length)return {handIdx:0,optIdx:0}; // alla ricarica di cintura pensa il motore
+      const tw=rh.findIndex(c=>c.v===G.pens.pend.v);
+      if(tw>=0)return {handIdx:tw,optIdx:0}; // parata obbligatoria
+      const cands=rh.map((c,i)=>({handIdx:i,optIdx:0,score:-avail(c.v)*0.5+rnd()*1.4}));
       cands.sort((a,b)=>b.score-a.score);
       return pickBySkill(cands,f.vis,rnd);
     }
@@ -1458,11 +1483,11 @@ I18N.it={
  log_scopa:' — <b style="color:var(--oro)">SCOPA! GOL!</b>',
  log_newround:'— Fine giro: il mazzo distribuisce 3 nuove carte a testa (quelle sul tavolo restano) —',
  log_shootout:'⚽ Calci di rigore — 5 a testa, carte scoperte: para solo la carta uguale. Poi oltranza.',
- log_pen_shot:'{0} tira il {1}…', log_pen_save:'🧤 PARATA! {0} ha la carta uguale', log_pen_goal:'⚽ GOL! {0} spiazza il portiere ({1}-{2})',
- fn_sudden:'OLTRANZA!', fn_sudden2:'5 carte nuove a testa, stessa regola',
+ pens_gk:'PORTIERE', log_pen_shot:'{0} tira il {1}…', log_pen_save:'🧤 PARATA! {0} ha la carta uguale', log_pen_goal:'⚽ GOL! {0} spiazza il portiere ({1}-{2})',
+ fn_sudden:'OLTRANZA!', fn_sudden2:'si ricomincia',
  fn_kickoff:"CALCIO D'INIZIO", fn_kick2:'Monetina: inizia {0}{1}',
  fn_2half:'2° TEMPO', fn_2half2:'Inizia {0}{1}',
- fn_extra:'SUPPLEMENTARI!', fn_extra2:'pareggio: un tempo in più — inizia {0}{1}',
+ fn_extra:'SUPPLEMENTARI!', fn_extra2:'inizia {0}{1}',
  fn_pens:'RIGORI!', fn_pens2:'inizia {0}{1}',
  fn_touch:' — tocca il campo',
  ch_title:'Giochi il {0}{1}', ch_multi:'può prendere in più modi: scegli.', ch_scopa:'SCOPA!',
@@ -1557,7 +1582,7 @@ I18N.it={
  cap_gol90:"{0} AL 90'", cap_tris:'TRE VOLTE {0}!', cap_upset:'DAVIDE BATTE GOLIA',
  cap_goleada:'PIOGGIA DI GOL', cap_mvp:'{0}: MIGLIORE IN CAMPO', cap_nogoals:'RETI BIANCHE, CHE BATTAGLIA',
  cap_derby:'IL GIORNO DEL DERBY',
- com_extra:["E domani al bar non si parlerà d'altro.","Il pallone, come sempre, ha avuto l'ultima parola.","Novanta minuti che finiscono dritti nell'album dei ricordi.","E il tabellone, stanotte, resta acceso un po' più a lungo.","Chi c'era potrà dire: io c'ero.","Il calcio è semplice: è vincere che è complicato."],
+ com_extra:["E domani al bar non si parlerà d'altro.","Il pallone, come sempre, ha avuto l'ultima parola.","Novanta minuti che finiscono dritti nell'album dei ricordi.","E il tabellone, stanotte, resta acceso un po' più a lungo.","Chi c'era potrà dire: io c'ero.","Il calcio è semplice: è vincere che è complicato.","Le pagelle possono attendere: stasera bastava esserci.","C'è chi parla di fortuna: il campo ha già risposto.","Archiviata sì, dimenticata mai."],
 
  com_final:["{0} alza la coppa e la città può smettere di trattenere il fiato. Le finali non si giocano: si vincono.","Novanta minuti che valgono una stagione: {0} li ha vissuti da campione. Il resto è già nostalgia.","Alla fine la coppa ha scelto le mani giuste: quelle di {0}. Stanotte niente sonno."],
  com_dcr:["Novanta minuti di trincea e poi la roulette dal dischetto, dove {0} ha avuto il cuore più freddo.","Quando il campo non decide, decide il coraggio: {0} dal dischetto non ha tremato mai.","I rigori non sono una lotteria, dicono: chiedetelo a {0}, che li ha preparati meglio."],
@@ -1569,6 +1594,15 @@ I18N.it={
  com_festival:["Difese in libera uscita e portieri in balìa: partita folle, di quelle che si raccontano al bar per un mese.","Chi ama il catenaccio cambi pagina: qui si è giocato a chi segnava di più. Ha vinto lo spettacolo.","Gol, ribaltoni e cuori in gola: mancavano solo i fuochi d'artificio."],
  com_derby_w:["Il derby non si gioca, si vive: {0} stanotte vive meglio, e domani sfotte.","Cento anni di rivalità in novanta minuti: {0} si prende la città fino alla prossima volta.","Nel derby conta solo vincerlo: {0} l'ha capito prima degli altri."],
  com_derby_x:["Il derby finisce pari e la città resta divisa a metà, come sempre: appuntamento alla prossima battaglia.","Tanto rumore, nessun padrone: il derby rimanda la sentenza e tiene tutti col fiato sospeso.","Onore diviso e sfottò congelati: il derby pareggia, l'attesa raddoppia."],
+ hl_suppl:["{0} LA VINCE AI SUPPLEMENTARI!","OLTRE IL 90' C'È SOLO {0}!","{0} NON MOLLA MAI: DECISA AL 120'!","SUPPLEMENTARI DA BRIVIDO: GODE {0}!","{0} LA SPUNTA QUANDO CONTA!"],
+ hl_solista:["{0} DA SOLO BASTA E AVANZA!","UNO CONTRO TUTTI: {0}!","{0} SI PRENDE TUTTO!","LA FIRMA È SEMPRE LA SUA: {0}!","{0}, UN UOMO SOLO AL COMANDO!"],
+ hl_pari2:["BOTTA E RISPOSTA SENZA VINCITORE","PARI SPETTACOLO: NESSUNO SI ARRENDE","COLPO SU COLPO, FINISCE IN PARITÀ","TUTTI I GOL, NESSUN PADRONE","SI PICCHIANO FINO ALLA FINE: È PARI"],
+ hl_zero:["ZERO A ZERO, MA CHE BATTAGLIA","LE DIFESE ALZANO IL MURO: 0-0","OCCHIALI SUL TABELLONE","0-0: VINCONO I PORTIERI","NIENTE GOL, TANTI BRIVIDI"],
+ cap_suppl:"DECISA AI SUPPLEMENTARI", cap_solista:"{0}, L'UOMO PARTITA", cap_pari2:"NESSUN VINCITORE, CHE PARTITA", cap_zero:"LA SFIDA DELLE DIFESE",
+ com_suppl:["Novanta minuti non bastavano a contenerla: {0} l'ha decisa quando le gambe tremavano e contava solo il cuore.","I supplementari sono la resa dei conti: {0} ci è arrivato con più benzina e più coraggio.","Quando tutti guardavano l'orologio, {0} guardava la porta: vittoria oltre il 90', vittoria doppia."],
+ com_solista:["Il calcio è uno sport di squadra, dicono: {0} stanotte ha deciso di fare da solo, e {1} ringrazia.","Tutti i gol portano la stessa firma: {0}. Gli avversari lo cercano ancora.","{1} ha undici giocatori, ma stanotte ne bastava uno: {0}."],
+ com_pari2:["Due squadre che non sanno cosa sia il freno a mano: colpo su colpo fino all'ultima carta, e il pari sta stretto a entrambe.","Nessuno ha vinto, nessuno si è arreso: il pareggio più vivo che si sia visto da queste parti.","Un pari che vale una promessa: queste due si ritroveranno, e saranno scintille."],
+ com_zero:["Zero gol e niente sbadigli: le difese hanno vinto a mani basse, gli attaccanti chiedono la rivincita.","Il tabellone dice 0-0, il campo racconta una guerra di nervi: a volte non segnare è un'arte.","Novanta minuti di scacchi: nessuno ha mosso il pezzo sbagliato. Applausi ai portieri."],
 
  hl_season:["{0} SUL TETTO D'EUROPA!","L'EUROPA È DI {0}!","{0} RE D'EUROPA!","NOTTE MAGICA: TRIONFA {0}!","{0} ALZA LA COPPA!"],
  hl_seasonyou:["{0} SUL TETTO D'EUROPA!","LA COPPA È NOSTRA: {0}!","{0} CAMPIONE D'EUROPA!","NOTTE MAGICA PER {0}!","{0}, L'EUROPA È TUA!"],
@@ -1712,11 +1746,11 @@ I18N.en={
  log_scopa:' — <b style="color:var(--oro)">SWEEP! GOAL!</b>',
  log_newround:'— End of round: the deck deals 3 new cards each (table cards stay) —',
  log_shootout:'⚽ Penalty shootout — 5 each, cards face up: only the equal card saves. Then sudden death.',
- log_pen_shot:'{0} shoots the {1}…', log_pen_save:'🧤 SAVED! {0} holds the equal card', log_pen_goal:'⚽ GOAL! {0} sends the keeper the wrong way ({1}-{2})',
- fn_sudden:'SUDDEN DEATH!', fn_sudden2:'a fresh 5 cards each, same rule',
+ pens_gk:'KEEPER', log_pen_shot:'{0} shoots the {1}…', log_pen_save:'🧤 SAVED! {0} holds the equal card', log_pen_goal:'⚽ GOAL! {0} sends the keeper the wrong way ({1}-{2})',
+ fn_sudden:'SUDDEN DEATH!', fn_sudden2:'everyone goes again',
  fn_kickoff:'KICK-OFF', fn_kick2:'Coin toss: {0} starts{1}',
  fn_2half:'2ND HALF', fn_2half2:'{0} starts{1}',
- fn_extra:'EXTRA TIME!', fn_extra2:'level: one more half — {0} starts{1}',
+ fn_extra:'EXTRA TIME!', fn_extra2:'{0} starts{1}',
  fn_pens:'PENALTIES!', fn_pens2:'{0} starts{1}',
  fn_touch:' — tap the pitch',
  ch_title:'You play the {0}{1}', ch_multi:'can capture in more than one way: choose.', ch_scopa:'SWEEP!',
@@ -1811,7 +1845,7 @@ I18N.en={
  cap_gol90:"{0} AT 90'", cap_tris:'{0} TIMES THREE!', cap_upset:'DAVID BEATS GOLIATH',
  cap_goleada:'RAINING GOALS', cap_mvp:'{0}: MAN OF THE MATCH', cap_nogoals:'NO GOALS, WHAT A BATTLE',
  cap_derby:'DERBY DAY',
- com_extra:["Tomorrow at the bar they'll talk of nothing else.","The ball, as ever, had the final say.","Ninety minutes headed straight for the scrapbook.","And the scoreboard stays lit a little longer tonight.","Those who were there will say: I was there.","Football is simple — it's winning that's complicated."],
+ com_extra:["Tomorrow at the bar they'll talk of nothing else.","The ball, as ever, had the final say.","Ninety minutes headed straight for the scrapbook.","And the scoreboard stays lit a little longer tonight.","Those who were there will say: I was there.","Football is simple — it's winning that's complicated.","The ratings can wait: tonight being there was enough.","Some will talk of luck: the pitch has already answered.","Filed away, yes. Forgotten, never."],
 
  com_final:["{0} lift the cup and the city can breathe again. Finals aren't played: they're won.","Ninety minutes worth a season: {0} lived them like champions. The rest is already nostalgia.","In the end the cup chose the right hands: {0}'s. No sleep tonight."],
  com_dcr:["Ninety minutes of trench warfare, then the roulette from the spot — where {0} kept the coldest heart.","When the pitch won't decide, courage does: {0} never trembled from the spot.","Penalties are no lottery, they say: ask {0}, who prepared them best."],
@@ -1823,6 +1857,15 @@ I18N.en={
  com_festival:["Defences on a day off, keepers at their mercy: a mad game you'll retell at the bar for a month.","Lovers of catenaccio, look away: this was a contest of who scores more. Entertainment won.","Goals, twists and hearts in throats: only the fireworks were missing."],
  com_derby_w:["You don't play a derby, you live it: {0} live better tonight — and gloat tomorrow.","A hundred years of rivalry in ninety minutes: {0} own the city until next time.","In a derby only winning matters: {0} understood it first."],
  com_derby_x:["The derby ends level and the city stays split in half, as ever: next battle already booked.","So much noise, no master: the derby defers its verdict and keeps everyone breathless.","Honours shared, taunts frozen: the derby draws and the wait doubles."],
+ hl_suppl:["{0} WIN IT IN EXTRA TIME!","BEYOND THE 90TH THERE'S ONLY {0}!","{0} NEVER QUIT: DECIDED AT 120'!","EXTRA-TIME THRILLER GOES TO {0}!","{0} STRIKE WHEN IT MATTERS!"],
+ hl_solista:["{0} ALONE IS PLENTY!","ONE MAN AGAINST EVERYONE: {0}!","{0} TAKES IT ALL!","SAME SIGNATURE ON EVERY GOAL: {0}!","{0}, A ONE-MAN SHOW!"],
+ hl_pari2:["BLOW FOR BLOW, NO WINNER","A DRAW WITH FIREWORKS","PUNCH AND COUNTER-PUNCH: ALL SQUARE","ALL THE GOALS, NO MASTER","THEY SLUG IT OUT TO THE END: LEVEL"],
+ hl_zero:["GOALLESS, BUT WHAT A BATTLE","DEFENCES BUILD THE WALL: 0-0","NOTHING ON THE SCOREBOARD","0-0: THE KEEPERS WIN","NO GOALS, PLENTY OF THRILLS"],
+ cap_suppl:"DECIDED IN EXTRA TIME", cap_solista:"{0}, MAN OF THE MATCH", cap_pari2:"NO WINNER, SOME GAME", cap_zero:"A DAY FOR DEFENCES",
+ com_suppl:["Ninety minutes couldn't hold it: {0} settled it when legs were shaking and only heart counted.","Extra time is the reckoning: {0} got there with more fuel and more courage.","While everyone watched the clock, {0} watched the goal: winning beyond the 90th counts double."],
+ com_solista:["Football is a team game, they say: tonight {0} decided to play it alone, and {1} are grateful.","Every goal bears the same signature: {0}. The opponents are still looking for him.","{1} have eleven players, but tonight one was enough: {0}."],
+ com_pari2:["Two teams allergic to the handbrake: blow for blow to the very last card, and the draw feels tight on both.","Nobody won, nobody surrendered: the liveliest draw seen around here in a while.","A draw that reads like a promise: these two will meet again, and there will be sparks."],
+ com_zero:["No goals and no yawns: the defences won hands down, the strikers demand a rematch.","The board says 0-0, the pitch tells of a war of nerves: sometimes not scoring is an art.","Ninety minutes of chess: nobody moved the wrong piece. Applause for the keepers."],
 
  hl_season:['{0} ON TOP OF EUROPE!','EUROPE BELONGS TO {0}!','{0} KINGS OF EUROPE!','MAGIC NIGHT: {0} TRIUMPH!','{0} LIFT THE CUP!'],
  hl_seasonyou:['{0} ON TOP OF EUROPE!','THE CUP IS OURS: {0}!','{0} CHAMPIONS OF EUROPE!','A MAGIC NIGHT FOR {0}!','{0}, EUROPE IS YOURS!'],
@@ -2721,7 +2764,7 @@ var histPair=null; // rivalità selezionata nell'albo multiplayer (tendina A vs 
 function injectPaper(){
   const oggi=new Date().toLocaleDateString('it-IT',{month:'long',year:'numeric'});
   const htmlFor=id=>`<div class="pb-head">MATCH<span class="tred">SWEEP!</span></div>
-    <div class="pb-sub">★ Summer Edition v. 1.0 · 14 ago ★</div><!-- NUMERO DI BUILD VISIBILE: aggiornarlo A OGNI pubblicazione (v1.2 = nuovo hub Stagione) -->
+    <div class="pb-sub">★ Summer Edition v. 1.0 · 21 ago ★</div><!-- NUMERO DI BUILD VISIBILE: aggiornarlo A OGNI pubblicazione (v1.2 = nuovo hub Stagione) -->
     <div class="pb-rule"></div>
     ${id==='scr-menu'?`<div class="pb-headline" data-i18n="headline">Clamoroso al Cibali!</div>`:''}
     <div class="pb-cols"><div class="pb-col"></div><div class="pb-col"></div><div class="pb-col"></div><div class="pb-col"></div></div>
@@ -2800,7 +2843,10 @@ function renderAll(lastLaid){
   // avversario (dorsi con stemma)
   const za=$('zone-ai');za.querySelectorAll('.card').forEach(e=>e.remove());
   const init=G.names.ai[0].toUpperCase();
-  G.hands.ai.forEach(()=>{za.insertAdjacentHTML('beforeend',`<div class="card back"><div class="crest-mini">${init}</div></div>`);});
+  const gkTurn=sd=>!!(G.pens&&G.pens.sv&&!G.pens.over)&&(G.pens.pend?G.turn===sd:G.turn!==sd); // il portiere si vede GIÀ PRIMA del tiro avversario (Enrico 2026-08-21): chi non è il tiratore del rigore in corso mostra le carte di parata
+  const aiHand=gkTurn('ai')?G.pens.sv.ai:G.hands.ai; // il portiere para con le SUE carte (Enrico 2026-08-21)
+  aiHand.forEach(()=>{za.insertAdjacentHTML('beforeend',`<div class="card back"><div class="crest-mini">${init}</div></div>`);});
+  const tagA=$('gk-ai');if(tagA){tagA.textContent=T.pens_gk;tagA.classList.toggle('hidden',!gkTurn('ai'));}
   // tavolo
   const zt=$('zone-table');zt.querySelectorAll('.card').forEach(e=>e.remove());
   // tavolo sempre neutro: sul tavolo c'è l'azione, non il calciatore
@@ -2810,12 +2856,15 @@ function renderAll(lastLaid){
   });
   // mano
   const zm=$('zone-me');zm.querySelectorAll('.card').forEach(e=>e.remove());
-  G.hands.me.forEach((c,i)=>{
-    const can=G.pens?!!(G.pens.pend&&G.turn==='me'&&c.v===G.pens.pend.v):captureOptions(c,G.table).length>0; // ai rigori l'oro segna la carta uguale = GOL (obbligatorio)
-    const pname=c.v===1?null:G.players.me[c.v-2];
+  const myGk=gkTurn('me');
+  const myHand=myGk?G.pens.sv.me:G.hands.me; // quando devo parare vedo le carte del MIO portiere
+  myHand.forEach((c,i)=>{
+    const can=G.pens?!!(G.pens.pend&&G.turn==='me'&&c.v===G.pens.pend.v):captureOptions(c,G.table).length>0; // ai rigori l'oro segna la carta uguale = PARATA (obbligatoria)
+    const pname=(c.v===1||myGk)?null:G.players.me[c.v-2]; // le carte del portiere senza nomi: il portiere è uno solo
     zm.insertAdjacentHTML('beforeend',cardHTML(c,'playable'+(can?' can-take':''),pname,true));
     zm.lastElementChild.onclick=()=>onMyCard(i);
   });
+  const tagM=$('gk-me');if(tagM){tagM.textContent=T.pens_gk;tagM.classList.toggle('hidden',!myGk);}
 }
 
 function fmtCards(cards){return cards.map(c=>c.v===1?'A':c.v).join(' + ');}
@@ -2846,9 +2895,10 @@ function logMove(r){
   addLog(txt);
 }
 
-function showFieldNote(a,b){
+function showFieldNote(a,b,big){ // big=true: banda scura e corpo maggiorato (solo passaggi: supplementari/rigori/oltranza)
   $('kickoff-note').innerHTML=`<div class="fn1">${a}</div><div class="fn2">${b}</div>`;
   $('kickoff-note').classList.remove('hidden');
+  $('kickoff-note').classList.toggle('fnbig',!!big);
 }
 async function showGoal(r){
   const team=r.side==='me'?G.names.me:G.names.ai;
@@ -2860,13 +2910,6 @@ async function showGoal(r){
   $('goal-overlay').classList.remove('show');
 }
 
-async function flashNote(big,sub){ // annuncio a TUTTO SCHERMO per i passaggi (supplementari/rigori): come il GOL, impossibile non vederlo (Enrico 2026-08-15)
-  $('goal-big').innerHTML=big;
-  $('goal-who').textContent=sub||'';
-  $('goal-overlay').classList.add('show');
-  await sleep(1700);
-  $('goal-overlay').classList.remove('show');
-}
 async function showPenFlash(r){ // GOL!/PARATA! a tutto schermo anche dal dischetto — stesso overlay del gol in partita
   const thr=r.side==='me'?'ai':'me'; // chi ha lanciato
   const team=r.matched?(r.side==='me'?G.names.me:G.names.ai):(thr==='me'?G.names.me:G.names.ai); // parata = il portiere che risponde; gol = il tiratore
@@ -2881,7 +2924,7 @@ async function showPenFlash(r){ // GOL!/PARATA! a tutto schermo anche dal dische
 function onMyCard(i){
   if(busy||G.turn!=='me')return;
   if(G.pens){ // rigori a carte scoperte: lancio libero; in risposta la carta uguale è GOL ed è obbligatoria (il click su qualsiasi carta la gioca); in oltranza stessa regola, 5 carte a testa
-    if(G.pens.pend){const tw=G.hands.me.findIndex(c=>c.v===G.pens.pend.v);if(tw>=0)i=tw;} // gol obbligatorio, come la presa nella Scopa
+    if(G.pens.pend){const sv=(G.pens.sv&&G.pens.sv.me)||G.hands.me;const tw=sv.findIndex(c=>c.v===G.pens.pend.v);if(tw>=0)i=tw;} // parata obbligatoria, come la presa nella Scopa
     doPlay('me',i,0);return;
   }
   const card=G.hands.me[i];
@@ -2923,7 +2966,8 @@ async function revealAiCard(c){ // la carta dell'avversario scivola SUL tavolo, 
 async function doPlay(side,handIdx,optIdx){
   busy=true;
   if(G.mp&&side==='me')mpSendMove(handIdx,optIdx); // multiplayer: la mia mossa parte subito verso la stanza
-  if(side==='ai')await revealAiCard(G.hands.ai[handIdx]); // anche ai rigori: tutto a carte scoperte (2026-08-10), il tiro dell'IA si vede sempre
+  if(side==='ai'){const srcA=(G.pens&&G.pens.pend&&G.pens.sv)?G.pens.sv.ai:G.hands.ai; // quando l'IA PARA la carta esce dalla mano del SUO portiere (2026-08-21)
+    await revealAiCard(srcA[Math.min(handIdx||0,srcA.length-1)]);} // anche ai rigori: tutto a carte scoperte, la carta dell'IA si vede sempre
   const r=playCard(G,side,handIdx,optIdx);
   liveSave(); // partita congelata: ogni mossa in cassaforte (solo carriera/coppa)
   renderAll(r.laid);
@@ -2931,7 +2975,7 @@ async function doPlay(side,handIdx,optIdx){
   if(r.newRound)addLog(`<span class="evt">${T.log_newround}</span>`);
   if(r.scopa&&!G.pens)await showGoal(r); // in partita: overlay marcatori come sempre
   if(G.pens&&r.dive)await showPenFlash(r); // ai rigori: GOL!/PARATA! a tutto schermo (Enrico 2026-08-11)
-  if(G.pens&&r.dive&&!r.endOfHalf&&G.pens.t.me===5&&G.pens.t.ai===5&&!G.pens.oltre){G.pens.oltre=true;showFieldNote(T.fn_sudden,T.fn_sudden2);} // 5-5: si va a oltranza (r.dive = la risposta che risolve)
+  if(G.pens&&r.dive&&!r.endOfHalf&&G.pens.t.me===5&&G.pens.t.ai===5&&!G.pens.oltre){G.pens.oltre=true;showFieldNote(T.fn_sudden,T.fn_sudden2,true);} // 5-5: si va a oltranza (r.dive = la risposta che risolve)
   if(G.pens&&r.dive&&!r.endOfHalf){await sleep(500);G.table=[];renderAll();} // la coppia risolta resta un attimo (l'overlay ha già dato il tempo), poi VIA dal tavolo
   if(r.endOfHalf){endHalf();return;}
   if(G.turn==='ai'){
@@ -2986,6 +3030,9 @@ function newsStory(){
   if(winner&&G.forza){const sum=f=>f.att+f.dif+f.vis;upset=sum(G.forza[winner==='me'?'ai':'me'])-sum(G.forza[winner])>=5&&Math.abs(sMe-sAi)>=2;}
   const isFinal=(G.career&&G.career.euro==='final')||(G.tour&&G.tour.ko&&G.tour.tie&&G.tour.tie.single);
   const dcr=!!G.shootResult, dcrW=dcr?(G.shootWinner==='me'?G.names.me:G.names.ai):null;
+  const et=(!dcr&&winner)?G.scorers.some(x=>x.minute>90):false; // decisa ai supplementari (gol oltre il 90')
+  let solista=null; // l'uomo partita: TUTTI i gol della vincente (almeno 2) da un piede solo
+  if(winner){const ws=G.scorers.filter(x=>x.side===winner);if(ws.length>=2&&ws.every(x=>x.num===ws[0].num))solista=ws[0].name;}
   if(isFinal&&(winner||dcr))return {hl:fmt(pk(T.hl_final),dcr?dcrW:wName),cap1:fmt(T.cap_final,dcr?dcrW:wName),com:fmt(pk(T.com_final),dcr?dcrW:wName)+' '+pk(T.com_extra)};
   if(dcr)return {hl:fmt(pk(T.hl_dcr),dcrW),cap1:T.cap_dcr,com:fmt(pk(T.com_dcr),dcrW)+' '+pk(T.com_extra)};
   if(comeback)return {hl:fmt(pk(T.hl_rimonta),wName),cap1:T.cap_rimonta,com:fmt(pk(T.com_rimonta),wName)+' '+pk(T.com_extra)};
@@ -2995,6 +3042,11 @@ function newsStory(){
   if(winner&&Math.max(sMe,sAi)>=4)return {hl:fmt(pk(T.hl_goleada),wName,score),cap1:T.cap_goleada,com:fmt(pk(T.com_goleada),wName)+' '+pk(T.com_extra)}; // 4+ gol di una squadra: goleada
   if(sMe+sAi>=6)return {hl:pk(T.hl_festival),cap1:T.cap_goleada,com:pk(T.com_festival)+' '+pk(T.com_extra)};                          // 6+ gol totali: partita folle
   if(G.derby)return winner?{hl:fmt(pk(T.hl_derby_w),wName),cap1:T.cap_derby,com:fmt(pk(T.com_derby_w),wName)+' '+pk(T.com_extra)}:{hl:pk(T.hl_derby_x),cap1:T.cap_derby,com:pk(T.com_derby_x)+' '+pk(T.com_extra)}; // il DERBY va SEMPRE in prima pagina
+  // TIPOLOGIE MINORI (Enrico 2026-08-21, "più varietà nelle 4 righe"): dopo il derby, prima del tabellino classico
+  if(et)return {hl:fmt(pk(T.hl_suppl),wName),cap1:T.cap_suppl,com:fmt(pk(T.com_suppl),wName)+' '+pk(T.com_extra)}; // decisa ai supplementari
+  if(solista)return {hl:fmt(pk(T.hl_solista),solista),cap1:fmt(T.cap_solista,solista),com:fmt(pk(T.com_solista),solista,wName)+' '+pk(T.com_extra)}; // tutti i gol suoi
+  if(!winner&&sMe>=2)return {hl:pk(T.hl_pari2),cap1:T.cap_pari2,com:pk(T.com_pari2)+' '+pk(T.com_extra)}; // pari con gol, dal 2-2 in su
+  if(!winner&&sMe+sAi===0&&!dcr)return {hl:pk(T.hl_zero),cap1:T.cap_zero,com:pk(T.com_zero)+' '+pk(T.com_extra)}; // lo 0-0 di battaglia
   return null;
 }
 var newsSeason=false; // true = la prima pagina è il GIORNALE DI FINE STAGIONE (niente partita da registrare)
@@ -3115,7 +3167,7 @@ async function shootRound(){
   logLines=[];
   addLog(T.log_shootout);
   const aiStarts=G.turn==='ai';
-  {const subP=fmt(T.fn_pens2,G.turn==='me'?G.names.me:G.names.ai,(aiStarts&&!G.mp)?T.fn_touch:'');flashNote('⚽ '+T.fn_pens,subP);showFieldNote(T.fn_pens,subP);} // rigori annunciati a tutto schermo + chi batte
+  showFieldNote(T.fn_pens,fmt(T.fn_pens2,G.turn==='me'?G.names.me:G.names.ai,(aiStarts&&!G.mp)?T.fn_touch:''),true); // rigori: annuncio GRANDE dentro il campo + chi batte
   if(aiStarts){
     if(G.mp){busy=false;return;} // sfida di coppa: il rigore dell'avversario arriva dalla stanza, non dall'IA
     busy=true;
@@ -3142,7 +3194,7 @@ function beginHalfUI(h){ // parte visiva del calcio d'inizio: comune a IA e mult
   const hint=(aiStarts&&!G.mp)?T.fn_touch:''; // in multiplayer la mossa dell'avversario arriva da sola
   if(h===1)showFieldNote(T.fn_kickoff,fmt(T.fn_kick2,first,hint)); // sobria: niente nomi ripetuti, sono già sul tabellone
   else if(h===2)showFieldNote(T.fn_2half,fmt(T.fn_2half2,first,hint));
-  else{const sub2=fmt(T.fn_extra2,first,hint);flashNote('⏱ '+T.fn_extra,sub2);showFieldNote(T.fn_extra,sub2);} // supplementari annunciati a tutto schermo
+  else showFieldNote(T.fn_extra,fmt(T.fn_extra2,first,hint),true); // supplementari: annuncio GRANDE dentro il campo (Enrico 2026-08-15, via l'overlay stile-gol)
   if(aiStarts){
     if(G.mp){busy=false;return;} // multiplayer: si aspetta la mossa vera dell'avversario (arriva dalla stanza)
     busy=true; // l'IA che batte NON muove finché non tocchi il campo (vedi click handler)
@@ -3209,7 +3261,7 @@ const RULES=[
    <h5>Supplementari</h5>
    <p>Nelle sfide da dentro-o-fuori (fase finale della Coppa, semifinali e finale della Euro Cup), se si finisce pari si gioca <b>un tempo supplementare</b> (una smazzata intera).</p>
    <h5>Calci di rigore</h5>
-   <p>Se resta ancora pari si va ai <b>rigori</b>: <b>5 a testa</b>, alternati, con <b>4 carte alla volta</b> da un mazzo nuovo, <b>tutte scoperte e tutte di giocatori diversi</b>; quando finiscono, il mazzo consegna <b>solo giocatori che non hanno ancora battuto</b> — nessuno tira due volte, come nel calcio vero. Il <b>tiratore</b> lancia una carta scoperta; il <b>portiere</b> para <b>solo se ha la carta uguale</b> — e in quel caso la gioca, presa obbligatoria come in partita. Se non ce l'ha, scarta comunque una carta (sprecata) e il rigore è <b>GOL</b>.  Segnare è più facile che parare, come nel calcio vero: tira i numeri di cui tieni le copie in mano e sarà dura trovarti la gemella. Con sole 4 carte il portiere copre poco: segnare è la norma, parare è l'impresa — e conta cosa tieni in mano e cosa è già uscito. La serie si interrompe appena è decisa; dal sesto rigore si va a <b>oltranza</b>, stessa regola, finché uno segna e l'altro no. In alto, il tabellone dei rigori: 🟢 gol, 🔴 parato. Il risultato ufficiale resta quello del campo (indicato con "dcr") e i gol dei rigori non contano per il capocannoniere. Vuoi allenarti? In <b>Amichevole → Solo rigori</b> vai dritto sul dischetto.</p>`}
+   <p>Se resta ancora pari si va ai <b>rigori</b>: <b>5 a testa</b>, alternati, tutte carte scoperte da un mazzo nuovo. Ognuno ha i suoi <b>5 rigoristi</b>, come nel calcio vero — carte di giocatori tutti diversi; in oltranza il mazzo consegna solo chi non ha ancora battuto: <b>nessuno tira due volte</b> — e, a parte, le <b>4 carte del portiere</b>, che si rinnovano anche loro: si para solo con quelle, così i tiri fatti non dicono nulla su cosa copre il portiere. Quando l'avversario va sul dischetto la tua mano diventa quella del portiere — etichetta <b>PORTIERE</b> — e vedi già cosa copri. Il <b>tiratore</b> lancia un rigorista a faccia in su; il <b>portiere</b> para <b>solo se tra le sue carte ha quella uguale</b> — e in quel caso la gioca, presa obbligatoria come in partita. Se non ce l'ha, ne scarta comunque una (sprecata) e il rigore è <b>GOL</b>. Segnare è più facile che parare, come nel calcio vero — e chi conta le carte già uscite tira e para meglio. La serie si interrompe appena è decisa; dal sesto rigore si va a <b>oltranza</b>, stessa regola, finché uno segna e l'altro no. In alto, il tabellone dei rigori: 🟢 gol, 🔴 parato. Il risultato ufficiale resta quello del campo (indicato con "dcr") e i gol dei rigori non contano per il capocannoniere. Vuoi allenarti? In <b>Amichevole → Solo rigori</b> vai dritto sul dischetto.</p>`}
 ];
 I18N.it.rules=RULES; // il regolamento italiano resta la copia master qui sopra
 I18N.en.rules=[
@@ -3270,7 +3322,7 @@ I18N.en.rules=[
    <h5>Extra time</h5>
    <p>In do-or-die matches (Cup knockout stage, Euro Cup semifinals and final), if the score is level you play <b>one period of extra time</b> (a full deal).</p>
    <h5>Penalty shootout</h5>
-   <p>If it is still level you go to <b>penalties</b>: <b>5 each</b>, alternating, with <b>4 cards at a time</b> from a fresh deck, <b>all face up and all different players</b>; when they run out, the deck deals <b>only players who haven't taken one yet</b> — nobody shoots twice, just like real football. The <b>shooter</b> throws a card face up; the <b>keeper</b> saves <b>only with the equal card</b> — and must play it, a mandatory capture just like in the match. No equal card in hand? He still discards one (wasted) and it is a <b>GOAL</b>.  Scoring beats saving, like in real football: shoot the values whose copies you hold and the twin will be hard to find. With only 4 cards the keeper covers little: scoring is the norm, saving is the feat — and what you keep in hand and what has already gone matters. The shootout stops as soon as it is decided; from the sixth kick on it is <b>sudden death</b>, same rule, until one scores and the other doesn't. Up top, the shootout board: 🟢 scored, 🔴 saved. The official result remains the one from the pitch (marked "pens") and shootout goals do not count for the top scorer award. Want practice? <b>Friendly → Penalties only</b> takes you straight to the spot.</p>`}
+   <p>If it is still level you go to <b>penalties</b>: <b>5 each</b>, alternating, all cards face up from a fresh deck. Each side holds its <b>5 takers</b>, just like real football — all different players; in sudden death the deck deals only players who haven't taken one yet: <b>nobody shoots twice</b> — plus, kept apart, the <b>keeper's 4 cards</b>, which refresh too: saves come only from those, so the kicks you've taken reveal nothing about what your keeper covers. When your opponent steps up, your hand becomes the keeper's — marked <b>KEEPER</b> — so you already see what you cover. The <b>shooter</b> throws a taker face up; the <b>keeper</b> saves <b>only if his cards hold the equal one</b> — and must play it, a mandatory capture just like in the match. No equal card? He still discards one (wasted) and it is a <b>GOAL</b>. Scoring beats saving, like in real football — and counting the cards already gone makes you shoot and save better. The shootout stops as soon as it is decided; from the sixth kick on it is <b>sudden death</b>, same rule, until one scores and the other doesn't. Up top, the shootout board: 🟢 scored, 🔴 saved. The official result remains the one from the pitch (marked "pens") and shootout goals do not count for the top scorer award. Want practice? <b>Friendly → Penalties only</b> takes you straight to the spot.</p>`}
 ];
 var currentRule=0;
 function renderRules(){
@@ -4041,7 +4093,7 @@ function mpRematch(){ // RIVINCITA nella stessa stanza: stesse squadre, nuova mo
    in un lampo col motore deterministico — stesse carte, stesso punteggio, stessa carta da giocare.
    L'avversario nel frattempo NON viene buttato fuori: vede "connessione persa, attendo il rientro"
    e decide lui se aspettare o uscire (niente timeout: coerente con la filosofia senza-timer). */
-const MP_PV=8; // VERSIONE DEL PROTOCOLLO MP (8 = rigori a 4 carte uniche e fresche, 2026-08-15; 7 = no-repeat; 6 = 5 carte; 5 = rovesciati; 4 = gol=match): i due client DEVONO coincidere,
+const MP_PV=10; // VERSIONE DEL PROTOCOLLO MP (10 = 5 rigoristi + portiere a 4, 2026-08-21; 9 = portiere separato; 8 = 4 carte uniche; 7 = no-repeat): i due client DEVONO coincidere,
 // altrimenti costruirebbero tornei/partite diverse in silenzio. Se non coincide: messaggio "ricaricate la pagina" e stop.
 function mpMark(){ // il biglietto porta una FIRMA unica del client (cid): due finestre sullo stesso PC condividono
   // la tasca (localStorage) e si sovrascrivono il biglietto a vicenda — al rientro il ruolo si deduce
